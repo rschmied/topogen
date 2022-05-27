@@ -1,0 +1,16 @@
+*.pyc
+dist
+venv
+.venv
+.vscode
+.ipynb_checkpoints
+.python-version
+__pycache__
+
+# VIM
+*.swp
+
+# IDE (Pycharm/VS Code)
+.vscode/
+*.code-workspace
+

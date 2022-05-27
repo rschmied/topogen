@@ -1,0 +1,45 @@
+hostname {{ node.hostname }}
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+no service config
+enable password cisco
+ip classless
+ip subnet-zero
+ip domain lookup
+ip name-server {{ config.nameserver }}
+ip domain name {{ config.domainname }}
+crypto key generate rsa modulus 768
+ip ssh server algorithm authentication password
+username {{ config.username }} privilege 15 secret {{ config.password }}
+cdp run
+!
+int Loopback0
+    ip address {{ node.loopback.ip }} {{ node.loopback.netmask }}
+!
+router ospf 1
+    passive-interface Loopback0
+    network {{ config.loopbacks.network_address }} {{ config.loopbacks.hostmask }} area 0
+    {%- for iface in node.interfaces %}
+    network {{ iface.address.ip }} 0.0.0.0 area 0
+    {%- endfor %}
+!
+{%- for iface in node.interfaces %}
+interface GigabitEthernet0/{{ loop.index0 }}
+    {%- if iface.description %}
+    description {{ iface.description }}
+    {%- endif %}
+    ip address {{ iface.address.ip }} {{ iface.address.netmask }}
+    cdp enable
+    no shutdown
+!
+{%- endfor %}
+line vty 0 4
+    transport input ssh telnet
+    exec-timeout 720 0
+    login local
+line con 0
+    password {{ config.password }}
+!
+end
