@@ -76,7 +76,7 @@ configuration:
 $
 ```
 
-At a minimu, the amount of nodes to be created must be provided.
+At a minimum, the amount of nodes to be created must be provided.
 
 #### Modes
 

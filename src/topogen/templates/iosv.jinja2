@@ -4,7 +4,7 @@ service timestamps debug datetime msec
 service timestamps log datetime msec
 no service password-encryption
 no service config
-enable password cisco
+enable password {{ config.password }}
 ip classless
 ip subnet-zero
 ip domain lookup
