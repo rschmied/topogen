@@ -2,27 +2,27 @@
 name = "topogen"
 version = "0.1.0"
 description = "generate test topology files and configurations for CML2"
-authors = ["Ralph Schmieder <ralph.schmieder@gmail.com>"]
+authors = ["Ralph Schmieder <rschmied@cisco.com>"]
 
 [tool.poetry.scripts]
 topogen = "topogen.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.11"
-# plotly = "^5.8.0"
-# networkx = "^2.8.2"
-# nbformat = "^5.4.0"
+networkx = "^2.8.2"
 Jinja2 = "^3.1.2"
 virl2-client = "^2.3.0"
 pyserde = {extras = ["toml"], version = "^0.7.3"}
 enlighten = "^1.10.2"
+# plotly = "^5.8.0"
+# nbformat = "^5.4.0"
 
 [tool.poetry.dev-dependencies]
 pylama = "^8.3.8"
 black = "^22.3.0"
 # ipykernel = "^6.13.0"
-numpy = "^1.22.4"
-scipy = "^1.8.1"
+# numpy = "^1.22.4"
+# scipy = "^1.8.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
