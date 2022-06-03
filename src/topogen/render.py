@@ -136,6 +136,10 @@ class Renderer:
         ]
 
         G = nx.random_shell_graph(constructor)
+
+        # for testing/troubleshooting, this is quite useful
+        # G = nx.barbell_graph(2, 0)
+
         if not nx.is_connected(G):
             complement = list(nx.k_edge_augmentation(G, k=1))
             G.add_edges_from(complement)
@@ -207,10 +211,17 @@ class Renderer:
                     cml2node = self.create_router(f"R{n+1}", node["pos"])
                     _LOGGER.info("Created router: %s", cml2node.label)
                     node["cml2node"] = cml2node
+                    # this is needed, otherwise the default interfaces which
+                    # are created might be missing locally
+                    self.lab.sync(topology_only=True)
             src_iface = self.new_interface(g.nodes[src]["cml2node"])
             dst_iface = self.new_interface(g.nodes[dst]["cml2node"])
             self.lab.create_link(src_iface, dst_iface)
-            _LOGGER.info("Created link: %s->%s", src_iface.label, dst_iface.label)
+
+            desc = f"from {src_iface.node.label} {src_iface.label} to {dst_iface.node.label} {dst_iface.label}"
+            _LOGGER.info("Created link: %s", desc )
+            g.edges[e]["desc"] = desc
+
             if self.args.progress:
                 eprog.update()
 
@@ -243,12 +254,13 @@ class Renderer:
         for n, nbrs in g.adj.items():
             interfaces: List[Interface] = []
 
-            for nbr, eattr in nbrs.items():
+            for _, eattr in sorted(nbrs.items()):
                 prefix = eattr["prefix"]
                 hosts = eattr["hosts"]
+                desc = eattr["desc"]
 
                 addr = IPv4Interface(f"{next(hosts)}/{prefix.netmask}")
-                interfaces.append(Interface(f"to R{nbr+1}", addr))
+                interfaces.append(Interface(desc, addr))
 
             if n == core:
                 core_iface = self.new_interface(g.nodes[n]["cml2node"])
