@@ -17,7 +17,7 @@ def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
         PASSWORD={{ config.password }}
 
         apk update
-        apk add dnsmasq
+        apk add dnsmasq iptables
 
         cat <<EOF >/etc/dnsmasq.conf
         domain-needed
@@ -34,6 +34,7 @@ def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
         ip link set eth1 up
         ip address add {{ node.interfaces[0] }} dev eth1
         ip route add {{ config.loopbacks }} via {{ node.interfaces[1].ip }}
+        ip route add {{ config.p2pnets }} via {{ node.interfaces[1].ip }}
 
         {%- for host in hosts %}
         echo -e "{{ host.ipv4 }}\t{{ host.name }}.{{ config.domainname }}" >>/etc/hosts
@@ -44,6 +45,36 @@ def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
         nameserver 127.0.0.1
         search {{ config.domainname }}
         EOF
+
+        # configure SSH params
+        SSH_DIR=/home/{{ config.username }}/.ssh
+        mkdir -p $SSH_DIR
+        chown {{ config.username }}.{{ config.username }} $SSH_DIR
+        cat <<EOF >$SSH_DIR/config
+        # this is NOT secure but we can not truly differentiate CIDR
+        # notation network prefixes as given by the config and have a
+        # matching host line...
+        # if grepcidr (http://www.pc-tools.net/unix/grepcidr/) would be
+        # available, then we could do something like this
+        #
+        # Match exec "grepcidr {{ config.loopbacks }} <(echo %h) &>/dev/null"
+        #   KexAlgorithms
+        #   ...
+        # instead we allow this globally (insecure but good enough for a virtual
+        # lab)
+        KexAlgorithms +diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1
+        EOF
+
+        # prevent UDHCPC from overwriting resolv.conf
+        UDHCPC="/etc/udhcpc"
+        UDHCPC_CONF="$UDHCPC/udhcpc.conf"
+        mkdir -p "$UDHCPC"
+
+        echo "NO_DNS=eth0" >$UDHCPC_CONF
+
+        # make it a router, masquerading outgoing packets
+        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+        echo 1 > /proc/sys/net/ipv4/ip_forward
 
         service dnsmasq start
         """

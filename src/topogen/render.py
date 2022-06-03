@@ -31,7 +31,7 @@ from topogen.models import (
     coords_generator,
 )
 
-_LOGGER = logging.getLogger("__name__")
+_LOGGER = logging.getLogger(__name__)
 
 EXT_CON_NAME = "ext-conn-0"
 DNS_HOST_NAME = "dns-host"
@@ -44,11 +44,34 @@ def get_templates() -> List[str]:
         if t.endswith(Renderer.J2SUFFIX)
     ]
 
+
 def disable_pcl_loggers():
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     for logger in loggers:
         if logger.name.startswith("virl2_client"):
             logger.setLevel(logging.WARN)
+
+
+def format_dns_entry(desc: str) -> str:
+
+    t = {
+        ord("/"): "-",
+        ord(" "): "-",
+    }
+
+    # these must be sorted by key length
+    interface_names = {
+        "TenGigabitEthernet": "ten",
+        "GigabitEthernet": "gi",
+        "Ethernet": "e",
+    }
+
+    for long, short in interface_names.items():
+        if long in desc:
+            desc = desc.replace(long, short)
+            break
+
+    return desc.translate(t).lower()
 
 
 class Renderer:
@@ -70,7 +93,7 @@ class Renderer:
         self.client = self.initialize_client()
 
         self.lab = self.client.create_lab(args.labname)
-        _LOGGER.info("Created lab: %s", self.lab.id)
+        _LOGGER.info("lab: %s", self.lab.id)
 
         # these will be /32 addresses
         self.loopbacks = IPv4Network(cfg.loopbacks).subnets(
@@ -138,7 +161,7 @@ class Renderer:
         G = nx.random_shell_graph(constructor)
 
         # for testing/troubleshooting, this is quite useful
-        # G = nx.barbell_graph(2, 0)
+        # G = nx.barbell_graph(5, 0)
 
         if not nx.is_connected(G):
             complement = list(nx.k_edge_augmentation(G, k=1))
@@ -167,7 +190,7 @@ class Renderer:
 
     def create_dns_host(self, c: Point = None):
         node = self.create_node(DNS_HOST_NAME, "alpine", c)
-        self.lab.sync()
+        self.lab.sync(topology_only=True)
         node.create_interface()  # this is eth1
         return node
 
@@ -181,58 +204,68 @@ class Renderer:
     def render_node_network(self) -> int:
 
         disable_pcl_loggers()
+        _LOGGER.warn("Creating network")
         g = self.create_nx_network()
 
         if self.args.progress:
             manager = enlighten.get_manager()
             eprog = manager.counter(
-                total=g.number_of_edges(),
+                total=g.number_of_edges() + g.number_of_nodes(),
                 desc="topology",
                 unit="elements",
                 leave=False,
                 color="cyan",
             )
-            nprog = manager.counter(
-                total=g.number_of_nodes(),
-                desc="configs ",
-                unit=" configs",
-                leave=False,
-                color="cyan",
-            )
 
+        _LOGGER.warn("Creating edges and nodes")
         for e in g.edges:
             src, dst = e
             prefix = next(self.p2pnets)
             g.edges[e]["prefix"] = prefix
             g.edges[e]["hosts"] = iter(prefix.hosts())
-            for n in (src, dst):
+            for n in [src, dst]:
                 node = g.nodes[n]
                 if node.get("cml2node") is None:
                     cml2node = self.create_router(f"R{n+1}", node["pos"])
-                    _LOGGER.info("Created router: %s", cml2node.label)
+                    _LOGGER.info("router: %s", cml2node.label)
                     node["cml2node"] = cml2node
                     # this is needed, otherwise the default interfaces which
                     # are created might be missing locally
                     self.lab.sync(topology_only=True)
+                    if self.args.progress:
+                        eprog.update()
             src_iface = self.new_interface(g.nodes[src]["cml2node"])
             dst_iface = self.new_interface(g.nodes[dst]["cml2node"])
             self.lab.create_link(src_iface, dst_iface)
 
             desc = f"from {src_iface.node.label} {src_iface.label} to {dst_iface.node.label} {dst_iface.label}"
-            _LOGGER.info("Created link: %s", desc )
+            _LOGGER.info("link: %s", desc)
             g.edges[e]["desc"] = desc
+            g.edges[e]["order"] = {
+                src: src_iface.slot,
+                dst: dst_iface.slot,
+            }
 
             if self.args.progress:
                 eprog.update()
 
+        nprog = manager.counter(
+            total=g.number_of_nodes(),
+            replace=eprog,
+            desc="configs ",
+            unit=" configs",
+            leave=False,
+            color="cyan",
+        )
+
         # create the external connector
         ext_con = self.create_ext_conn(c=Point(0, 0))
-        _LOGGER.info("Created external connector: %s", ext_con.label)
+        _LOGGER.warn("External connector: %s", ext_con.label)
 
         # create the DNS host
         dns_addr, dns_via = self.next_network()
         dns_host = self.create_dns_host(c=Point(self.args.distance, 0))
-        _LOGGER.info("Created DNS host: %s", dns_host.label)
+        _LOGGER.warn("DNS host: %s", dns_host.label)
         dns_iface = dns_host.get_interface_by_slot(1)
 
         # prepare DNS configuration
@@ -244,23 +277,26 @@ class Renderer:
             ext_con.get_interface_by_slot(0),
             dns_host.get_interface_by_slot(0),
         )
-        _LOGGER.info("Created ext-conn link")
+        _LOGGER.warn("Creating ext-conn link")
 
         core = sorted(
             nx.degree_centrality(g).items(), key=lambda e: e[1], reverse=True
         )[0][0]
-        _LOGGER.info("Identified core node is R%s", core + 1)
+        _LOGGER.warn("Identified core node is R%s", core + 1)
 
+        _LOGGER.warn("Creating node configurations")
         for n, nbrs in g.adj.items():
             interfaces: List[Interface] = []
 
-            for _, eattr in sorted(nbrs.items()):
+            for _, eattr in nbrs.items():
                 prefix = eattr["prefix"]
                 hosts = eattr["hosts"]
                 desc = eattr["desc"]
+                order = eattr["order"]
 
                 addr = IPv4Interface(f"{next(hosts)}/{prefix.netmask}")
-                interfaces.append(Interface(desc, addr))
+                interfaces.append(Interface(desc, addr, slot=order[n]))
+                dns_zone.append(DNShost(format_dns_entry(desc), addr.ip))
 
             if n == core:
                 core_iface = self.new_interface(g.nodes[n]["cml2node"])
@@ -268,8 +304,13 @@ class Renderer:
                     dns_iface,
                     core_iface,
                 )
-                interfaces.append(Interface(f"to {dns_host.label}", dns_via))
-                _LOGGER.info("Created DNS host link")
+                label = f"from {core_iface.node.label} {core_iface.label} to {DNS_HOST_NAME} eth1"
+                interfaces.append(Interface(label, dns_via, slot=core_iface.slot))
+                dns_zone.append(DNShost(format_dns_entry(label), dns_via.ip))
+                _LOGGER.warn("DNS host link")
+
+            # need to sort interface list by slot
+            interfaces.sort(key=lambda x: x.slot)
 
             loopback = IPv4Interface(next(self.loopbacks))
             node = Node(
@@ -277,12 +318,18 @@ class Renderer:
                 loopback=loopback,
                 interfaces=interfaces,
             )
-            config = self.template.render(config=self.config, node=node)
+            # "origin" identifies the default gateway on the node connecting
+            # to the DNS host
+            config = self.template.render(
+                config=self.config,
+                node=node,
+                origin="" if n != core else dns_addr,
+            )
             g.nodes[n]["cml2node"].config = config
             self.lab.sync(topology_only=True)
 
             dns_zone.append(DNShost(node.hostname.lower(), loopback.ip))
-            _LOGGER.info("config created for %s", node.hostname)
+            _LOGGER.warn("Config created for %s", node.hostname)
             if self.args.progress:
                 nprog.update()
 
@@ -290,10 +337,16 @@ class Renderer:
         node = Node(
             hostname=DNS_HOST_NAME, loopback=None, interfaces=[dns_addr, dns_via]
         )
+        dns_zone.append(DNShost(f"{DNS_HOST_NAME}-eth1", dns_addr))
         dns_host.config = dnshostconfig(self.config, node, dns_zone)
         self.lab.sync(topology_only=True)
-        _LOGGER.info("config created for DNS host")
-        manager.stop()
+        _LOGGER.warn("Config created for DNS host")
+        _LOGGER.warn("Done")
+
+        if self.args.progress:
+            nprog.close()
+            manager.stop()
+
         return
 
     def render_node_sequence(self):
@@ -310,13 +363,13 @@ class Renderer:
 
         # create the external connector
         cml2_node = self.create_ext_conn()
-        _LOGGER.info("Created external connector: %s", cml2_node.label)
+        _LOGGER.info("external connector: %s", cml2_node.label)
 
         # create the DNS host
         dns_iface, prev_iface = self.next_network()
         dns_via = prev_iface
         dns_host = self.create_dns_host()
-        _LOGGER.info("Created DNS host: %s", dns_host.label)
+        _LOGGER.info("DNS host: %s", dns_host.label)
         prev_cml2iface = dns_host.get_interface_by_slot(1)
 
         # prepare DNS configuration
@@ -328,7 +381,7 @@ class Renderer:
             cml2_node.get_interface_by_slot(0),
             dns_host.get_interface_by_slot(0),
         )
-        _LOGGER.info("Created ext-conn link")
+        _LOGGER.info("ext-conn link")
 
         for idx in range(self.args.nodes):
             loopback = IPv4Interface(next(self.loopbacks))
@@ -346,9 +399,9 @@ class Renderer:
             cml2_node = self.create_node(node.hostname, self.args.template)
             cml2_node.config = config
             self.lab.sync(topology_only=True)
-            _LOGGER.info("Created node: %s", cml2_node.label)
+            _LOGGER.info("node: %s", cml2_node.label)
             self.lab.create_link(prev_cml2iface, cml2_node.get_interface_by_slot(1))
-            _LOGGER.info("Created link %s", prev_cml2iface.label)
+            _LOGGER.info("link %s", prev_cml2iface.label)
             prev_cml2iface = cml2_node.get_interface_by_slot(0)
             dns_zone.append(DNShost(node.hostname.lower(), loopback.ip))
             prev_iface = dst_iface
@@ -361,5 +414,9 @@ class Renderer:
         )
         dns_host.config = dnshostconfig(self.config, node, dns_zone)
         self.lab.sync(topology_only=True)
+
+        if self.args.progress:
+            ticks.close()
+            manager.stop()
 
         return 0

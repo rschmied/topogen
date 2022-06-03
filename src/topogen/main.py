@@ -6,8 +6,9 @@ import sys
 import topogen
 from topogen.models import TopogenError
 from topogen.render import Renderer, get_templates
+from topogen.colorlog import CustomFormatter
 
-_LOGGER = logging.getLogger("__name__")
+_LOGGER = logging.getLogger(__name__)
 
 
 def create_argparser():
@@ -102,13 +103,18 @@ def create_argparser():
 
 
 def setup_logging(loglevel: str):
-    format = "%(levelname)s %(module)s:%(lineno)d:%(message)s"
-    logging.basicConfig(format=format, level=logging.WARN)
+    logging.basicConfig(level=logging.WARN)
     level = logging.getLevelName(loglevel.upper())
+    unknown_loglevel = False
     if isinstance(level, str) and level.startswith("Level"):
-        _LOGGER.warning("unknown log level: %s", level)
+        unknown_loglevel = True
         level = logging.WARN
     logging.root.setLevel(level)
+    cf = CustomFormatter()
+    for handler in logging.root.handlers:
+        handler.setFormatter(cf)
+    if unknown_loglevel:
+        _LOGGER.warning("Unknown log level: %s", level)
 
 
 def main():
@@ -127,12 +133,11 @@ def main():
 
     try:
         r = Renderer(args, cfg)
+        # argparse ensures correct mode
         if args.mode == "simple":
             retval = r.render_node_sequence()
-        elif args.mode == "nx":
+        else:  # args.mode == "nx":
             retval = r.render_node_network()
-        else:
-            print("ugh?")
     except TopogenError as exc:
         _LOGGER.error(exc)
         retval = 1

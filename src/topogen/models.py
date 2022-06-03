@@ -44,6 +44,7 @@ class coords_generator:
 class Interface:
     description: str
     address: IPv4Interface
+    slot: int = 0
 
 
 @dataclass

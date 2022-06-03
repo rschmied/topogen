@@ -10,11 +10,15 @@ ip subnet-zero
 ip domain lookup
 ip name-server {{ config.nameserver }}
 ip domain name {{ config.domainname }}
-crypto key generate rsa modulus 768
+crypto key generate rsa modulus 1024
 ip ssh server algorithm authentication password
 username {{ config.username }} privilege 15 secret {{ config.password }}
 cdp run
 !
+{%- if origin %}
+ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
+!
+{%- endif %}
 int Loopback0
     ip address {{ node.loopback.ip }} {{ node.loopback.netmask }}
 !
@@ -24,6 +28,9 @@ router ospf 1
     {%- for iface in node.interfaces %}
     network {{ iface.address.ip }} 0.0.0.0 area 0
     {%- endfor %}
+    {%- if origin %}
+    default-information originate
+    {%- endif %}
 !
 {%- for iface in node.interfaces %}
 interface GigabitEthernet0/{{ loop.index0 }}

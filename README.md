@@ -4,15 +4,33 @@ This package provides a `topogen` command which can create CML2 topologies.
 It does this by using the PCL (VIRL Python Client Library) to talk to a live
 controller, creating the lab, nodes and links on the fly.
 
+![Demo](.images/demo.gif)
+
 ## Features
 
 - create topologies of arbitrary size (up to 400 tested, this is N^2)
 - can use templates to provide node configurations (currently a built-in
   DNS host template and an IOSv template exist)
 - provide network numbering for all links (/30) and router loopbacks
-- provide a DNS configuration so that all loopbacks can be resolved both from
-  the DNS host as well as from all routers (provided the template configures
-  DNS)
+- provide a DNS configuration so that all loopbacks and interface addresses can
+  be resolved both from the DNS host as well as from all routers (provided the
+  template configures DNS)
+- provide a default route via DNS host, distributed via OSPF
+- provide outbound NAT on the DNS host for the entire network
+
+## Installation
+
+> **Important** At this point in time, pulling the PCL from PyPi will install
+the 2.3 version which is, unfortunately, not compatible with 2.4.  You will need
+to install a 2.4 wheel (downloaded a 2.4 controller) with Pip manually.
+
+Steps:
+
+1. create a directory topogen
+2. create virtual environment in it `python3 -mvenv .venv`
+3. activate the venv `source .venv/bin/activate`
+4. install the wheel `pip install ./topogen-0.1.0-py3-none-any.whl`
+5. manually install the PCL wheel `pip install ./virl2_client-2.4.0+build.2-py3-none-any.whl`
 
 ## Configuration
 
@@ -31,9 +49,9 @@ In addition, a CA file in PEM format can be provided which can be used to verify
 the cert presented by the controller... The default CA file of the controller is
 included in the repo.
 
-For this to work, it's also required to have proper name resolution (e.g. add
-`192.168.254.123 cml-controller.cml.lab` with **the correct IP** into your hosts
-file).
+For this to work, it's also required to have proper name resolution for the CML2
+controller (e.g. add `192.168.254.123 cml-controller.cml.lab` with **the correct
+IP** into your hosts file).
 
 ### Tool
 
@@ -127,10 +145,64 @@ install this package from the Internet.  Therefore it is required to have Intern
 connectivity for this to work!
 
 Once the network has been created and full connectivity is established, it should
-be possible to SSH/Telnet to all nodes using their node names:
+be possible to SSH/Telnet to all nodes using their node names.
+
+The below shows logging into the Jumphost (at 192.168.255.100) via the controller
+(at 192.168.122.245) and then onward to router `r1` using its name.
 
 ```plain
-$ telnet r1
-Connecting to 10.0.0.2...
-R1>
+rschmied@delle:~/Projects/topogen$ ssh -tp1122 sysuser@192.168.122.245 ssh cisco@192.168.255.100
+cisco@192.168.255.100's password: 
+Welcome to Alpine!
+
+The Alpine Wiki contains a large amount of how-to guides and general
+information about administrating Alpine systems.
+See <http://wiki.alpinelinux.org/>.
+
+You can setup the system with the command: setup-alpine
+
+You may change this message by editing /etc/motd.
+
+dns-host:~$ telnet r1
+Connected to r1
+
+Entering character mode
+Escape character is '^]'.
+
+
+**************************************************************************
+* IOSv is strictly limited to use for evaluation, demonstration and IOS  *
+* education. IOSv is provided as-is and is not supported by Cisco's      *
+* Technical Advisory Center. Any use or disclosure, in whole or in part, *
+* of the IOSv Software or Documentation to any third party for any       *
+* purposes is expressly prohibited except as otherwise authorized by     *
+* Cisco in writing.                                                      *
+**************************************************************************
+
+User Access Verification
+
+Username: cisco
+Password: 
+**************************************************************************
+* IOSv is strictly limited to use for evaluation, demonstration and IOS  *
+* education. IOSv is provided as-is and is not supported by Cisco's      *
+* Technical Advisory Center. Any use or disclosure, in whole or in part, *
+* of the IOSv Software or Documentation to any third party for any       *
+* purposes is expressly prohibited except as otherwise authorized by     *
+* Cisco in writing.                                                      *
+**************************************************************************
+R1#traceroute 192.168.122.1
+Type escape sequence to abort.
+Tracing the route to 192.168.122.1
+VRF info: (vrf in name/id, vrf out name/id)
+  1 from-r1-gi0-0-to-r9-gi0-0.virl.lab (172.16.0.2) 3 msec
+    from-r1-gi0-1-to-r2-gi0-0.virl.lab (172.16.0.6) 9 msec
+    from-r1-gi0-2-to-r4-gi0-0.virl.lab (172.16.0.10) 4 msec
+  2 from-r7-gi0-4-to-r9-gi0-2.virl.lab (172.16.0.57) 10 msec
+    from-r2-gi0-3-to-r7-gi0-0.virl.lab (172.16.0.22) 18 msec
+    from-r4-gi0-2-to-r7-gi0-2.virl.lab (172.16.0.38) 14 msec
+  3 172.16.0.77 7 msec 10 msec 11 msec
+  4 192.168.255.1 11 msec 14 msec 9 msec
+  5 192.168.122.1 13 msec 12 msec 11 msec
+R1#
 ```

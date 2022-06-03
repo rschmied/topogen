@@ -5,7 +5,7 @@ from ipaddress import IPv4Network
 from serde import deserialize, serialize
 from serde.toml import from_toml, to_toml
 
-_LOGGER = logging.getLogger("__name__")
+_LOGGER = logging.getLogger(__name__)
 
 
 @deserialize
@@ -24,6 +24,7 @@ class Config:
         try:
             with open(filename) as fh:
                 cfg = from_toml(cls, fh.read())
+            _LOGGER.info("Configuration loaded from file %s", filename)
         except (FileNotFoundError, TypeError) as exc:
             if not isinstance(exc, FileNotFoundError):
                 _LOGGER.error(exc)
