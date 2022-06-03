@@ -175,13 +175,17 @@ class Renderer:
         if c is None:
             c = next(self.coords)
         try:
-            return self.lab.create_node(
+            node = self.lab.create_node(
                 label=label,
                 node_definition=node_def,
                 x=c.x,
                 y=c.y,
                 populate_interfaces=True,
             )
+            # this is needed, otherwise the default interfaces which are created
+            # might be missing locally
+            self.lab.sync(topology_only=True)
+            return node
         except HTTPError as exc:
             raise TopogenError("API error") from exc
 
@@ -190,7 +194,6 @@ class Renderer:
 
     def create_dns_host(self, c: Point = None):
         node = self.create_node(DNS_HOST_NAME, "alpine", c)
-        self.lab.sync(topology_only=True)
         node.create_interface()  # this is eth1
         return node
 
@@ -229,9 +232,6 @@ class Renderer:
                     cml2node = self.create_router(f"R{n+1}", node["pos"])
                     _LOGGER.info("router: %s", cml2node.label)
                     node["cml2node"] = cml2node
-                    # this is needed, otherwise the default interfaces which
-                    # are created might be missing locally
-                    self.lab.sync(topology_only=True)
                     if self.args.progress:
                         eprog.update()
             src_iface = self.new_interface(g.nodes[src]["cml2node"])
@@ -326,7 +326,6 @@ class Renderer:
                 origin="" if n != core else dns_addr,
             )
             g.nodes[n]["cml2node"].config = config
-            self.lab.sync(topology_only=True)
 
             dns_zone.append(DNShost(node.hostname.lower(), loopback.ip))
             _LOGGER.warn("Config created for %s", node.hostname)
@@ -339,7 +338,6 @@ class Renderer:
         )
         dns_zone.append(DNShost(f"{DNS_HOST_NAME}-eth1", dns_addr))
         dns_host.config = dnshostconfig(self.config, node, dns_zone)
-        self.lab.sync(topology_only=True)
         _LOGGER.warn("Config created for DNS host")
         _LOGGER.warn("Done")
 
@@ -398,7 +396,6 @@ class Renderer:
             config = self.template.render(config=self.config, node=node)
             cml2_node = self.create_node(node.hostname, self.args.template)
             cml2_node.config = config
-            self.lab.sync(topology_only=True)
             _LOGGER.info("node: %s", cml2_node.label)
             self.lab.create_link(prev_cml2iface, cml2_node.get_interface_by_slot(1))
             _LOGGER.info("link %s", prev_cml2iface.label)
@@ -413,7 +410,6 @@ class Renderer:
             hostname=DNS_HOST_NAME, loopback=None, interfaces=[dns_iface, dns_via]
         )
         dns_host.config = dnshostconfig(self.config, node, dns_zone)
-        self.lab.sync(topology_only=True)
 
         if self.args.progress:
             ticks.close()
