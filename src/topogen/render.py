@@ -182,10 +182,11 @@ class Renderer:
         """create a new random network using NetworkX"""
 
         # cluster size
-        size = min(int(self.args.nodes / 4), self.args.nodes)
+        size = int(self.args.nodes / 4)
+        size = max(size, 20)
 
         # how many clusters? ensure at least one
-        clusters = min(int(self.args.nodes / size), 1)
+        clusters = int(self.args.nodes / size)
         remain = self.args.nodes - clusters * size
         dimensions = int(math.sqrt(self.args.nodes) * self.args.distance)
 
