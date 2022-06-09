@@ -1,3 +1,7 @@
+"""
+qqq
+"""
+
 import argparse
 import logging
 import os
@@ -12,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def create_argparser():
+    """create the argparser for topogen"""
     parser = argparse.ArgumentParser(
         prog=topogen.__name__, description=topogen.__description__
     )
@@ -103,6 +108,9 @@ def create_argparser():
 
 
 def setup_logging(loglevel: str):
+    """sets up the logging, takes the given loglevel and uses the custom,
+    colorful log formatter
+    """
     logging.basicConfig(level=logging.WARN)
     level = logging.getLevelName(loglevel.upper())
     unknown_loglevel = False
@@ -110,14 +118,15 @@ def setup_logging(loglevel: str):
         unknown_loglevel = True
         level = logging.WARN
     logging.root.setLevel(level)
-    cf = CustomFormatter()
+    custom_formatter = CustomFormatter()
     for handler in logging.root.handlers:
-        handler.setFormatter(cf)
+        handler.setFormatter(custom_formatter)
     if unknown_loglevel:
         _LOGGER.warning("Unknown log level: %s", level)
 
 
 def main():
+    """main function, returns 0 on success, 1 otherwise"""
     parser = create_argparser()
     args = parser.parse_args()
     setup_logging(args.loglevel)
@@ -132,12 +141,12 @@ def main():
         return 0
 
     try:
-        r = Renderer(args, cfg)
+        renderer = Renderer(args, cfg)
         # argparse ensures correct mode
         if args.mode == "simple":
-            retval = r.render_node_sequence()
+            retval = renderer.render_node_sequence()
         else:  # args.mode == "nx":
-            retval = r.render_node_network()
+            retval = renderer.render_node_network()
     except TopogenError as exc:
         _LOGGER.error(exc)
         retval = 1
