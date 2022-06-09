@@ -24,7 +24,7 @@ int Loopback0
 !
 router ospf 1
     passive-interface Loopback0
-    network {{ config.loopbacks.network_address }} {{ config.loopbacks.hostmask }} area 0
+    network {{ node.loopback.ip }} 0.0.0.0 area 0
     {%- for iface in node.interfaces %}
     network {{ iface.address.ip }} 0.0.0.0 area 0
     {%- endfor %}

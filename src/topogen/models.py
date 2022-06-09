@@ -1,6 +1,8 @@
+"""models for topogen topology generator"""
+
 from dataclasses import dataclass, replace
 from ipaddress import IPv4Address, IPv4Interface
-from typing import List
+from typing import List, Optional
 
 
 class TopogenError(Exception):
@@ -9,11 +11,14 @@ class TopogenError(Exception):
 
 @dataclass
 class Point:
+    """a point in a carthesian cooardinate system"""
+
     x: int
     y: int
 
 
-class coords_generator:
+class CoordsGenerator:
+    """a generator which generates square spiral coordinates"""
 
     DIRSM = {"l": "u", "u": "r", "r": "d", "d": "l"}
 
@@ -36,25 +41,31 @@ class coords_generator:
                         self.point.y -= self.distance
                     else:  # self.dir == "l"
                         self.point.x -= self.distance
-                self.dir = coords_generator.DIRSM[self.dir]
+                self.dir = CoordsGenerator.DIRSM[self.dir]
             self.step += 1
 
 
 @dataclass
 class Interface:
-    description: str
+    """interface of a node, slot is the physical slot in the device"""
+
     address: IPv4Interface
+    description: str = ""
     slot: int = 0
 
 
 @dataclass
 class Node:
+    """a node of a topology"""
+
     hostname: str
-    loopback: IPv4Interface
-    interfaces: List[IPv4Interface]
+    loopback: Optional[IPv4Interface]
+    interfaces: List[Interface]
 
 
 @dataclass
 class DNShost:
+    """a DNS host of a topology, this typically only exists once"""
+
     name: str
     ipv4: IPv4Address

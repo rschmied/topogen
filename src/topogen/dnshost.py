@@ -1,3 +1,5 @@
+""" configuration template for a DNS host"""
+
 from textwrap import dedent
 from typing import List
 
@@ -7,7 +9,46 @@ from topogen.config import Config
 from topogen.models import DNShost, Node
 
 
+# USERNAME=cisco
+# PASSWORD=cyL7qj2Zd2DshyNOQltjjCEHWQxKywfk
+#
+# ifdown eth0
+# cat <<EOF >/etc/network/interfaces
+# auto lo
+# iface lo inet loopback
+#
+# auto eth0
+# iface eth0 inet static
+#         hostname dns-host
+#         address 172.16.151.111/25
+#         gateway 172.16.151.1
+# EOF
+#
+# cat <<EOF >/etc/resolv.conf
+# nameserver 64.102.6.247 173.37.137.85
+# search cisco.com
+# EOF
+#
+# ifup eth0
+# export HTTPS_PROXY="http://proxy.esl.cisco.com:80/"
+# export HTTP_PROXY="http://proxy.esl.cisco.com:80/"
+# ssh -t jumper ssh cisco@172.16.151.111
+#
+#
+# for i in $(seq 300); do
+#   echo -n "$i "
+#   if ! ping &>/dev/null -Ac 10 -s1000 r$i; then
+#     echo "failed for $i"
+#     exit
+#   fi
+# done
+# echo
+# echo "success"
+#
+
+
 def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
+    """renders the DNS host template"""
     basic_config = dedent(
         r"""
         # this is a shell script which will be sourced at boot
@@ -32,9 +73,9 @@ def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
         EOF
 
         ip link set eth1 up
-        ip address add {{ node.interfaces[0] }} dev eth1
-        ip route add {{ config.loopbacks }} via {{ node.interfaces[1].ip }}
-        ip route add {{ config.p2pnets }} via {{ node.interfaces[1].ip }}
+        ip address add {{ node.interfaces[0].address }} dev eth1
+        ip route add {{ config.loopbacks }} via {{ node.interfaces[1].address.ip }}
+        ip route add {{ config.p2pnets }} via {{ node.interfaces[1].address.ip }}
 
         {%- for host in hosts %}
         echo -e "{{ host.ipv4 }}\t{{ host.name }}.{{ config.domainname }}" >>/etc/hosts
@@ -80,5 +121,5 @@ def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
         """
     )
 
-    template = Environment(loader=BaseLoader).from_string(basic_config)
+    template = Environment(loader=BaseLoader).from_string(basic_config)  # type: ignore
     return template.render(node=node, config=cfg, hosts=hosts)
