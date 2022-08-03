@@ -1,4 +1,5 @@
-"""colorful log message formatter
+"""
+colorful log message formatter
 based on
 https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
 

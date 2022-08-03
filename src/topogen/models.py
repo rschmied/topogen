@@ -11,7 +11,7 @@ class TopogenError(Exception):
 
 @dataclass
 class Point:
-    """a point in a carthesian cooardinate system"""
+    """a point in a carthesian coordinate system"""
 
     x: int
     y: int
