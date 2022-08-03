@@ -1,5 +1,6 @@
 """
-qqq
+a static topology generator
+argument parsing and logging
 """
 
 import argparse
