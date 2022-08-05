@@ -20,9 +20,9 @@ controller, creating the lab, nodes and links on the fly.
 
 ## Installation
 
-> **Important** At this point in time, pulling the PCL from PyPi will install
-the 2.3 version which is, unfortunately, not compatible with 2.4.  You will need
-to install a 2.4 wheel (downloaded a 2.4 controller) with Pip manually.
+> **Important** Ensure that the PCL you install is compatible with your controller.
+If it doesn't work, then try installing the wheel with Pip manually. The wheel can
+be downloaded from your controller at the `/client` location.
 
 Steps:
 
