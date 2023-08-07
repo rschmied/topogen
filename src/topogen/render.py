@@ -5,6 +5,7 @@ import logging
 import math
 import os
 from argparse import Namespace
+from datetime import datetime
 from ipaddress import IPV4LENGTH, IPv4Interface, IPv4Network
 from typing import Any, List, Set, Tuple, Union
 
@@ -17,7 +18,8 @@ from jinja2 import (
     TemplateNotFound,
     select_autoescape,
 )
-from requests.exceptions import ConnectionError, HTTPError  # pylint: disable=W0622
+# from httpx import ConnectionError, HTTPError  # pylint: disable=W0622
+from httpx import ConnectTimeout, HTTPError
 from virl2_client import ClientLibrary, InitializationError
 from virl2_client.models import Lab
 
@@ -25,12 +27,12 @@ from topogen import templates
 from topogen.config import Config
 from topogen.dnshost import dnshostconfig
 from topogen.models import (
+    CoordsGenerator,
     DNShost,
     Interface,
     Node,
     Point,
     TopogenError,
-    CoordsGenerator,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,6 +132,8 @@ class Renderer:
         self.loopbacks = IPv4Network(cfg.loopbacks).subnets(
             prefixlen_diff=IPV4LENGTH - cfg.loopbacks.prefixlen
         )
+        # we do not want to use .0
+        next(self.loopbacks)
 
         # these will be /30 addresses (4 addresses, 1 network, 1 broadcast, 2
         # hosts) e.g. 2 bits (hence the -2)
@@ -155,7 +159,9 @@ class Renderer:
         cainfo: Union[bool, str] = self.args.cafile
         try:
             os.stat(self.args.cafile)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
+            # TypeError is raised when cafile is None. We set
+            # cafile to None when args.insecure is set.
             cainfo = not self.args.insecure
 
         try:
@@ -163,7 +169,7 @@ class Renderer:
             if not client.is_system_ready():
                 raise TopogenError("system is not ready")
             return client
-        except ConnectionError as exc:
+        except ConnectTimeout as exc:
             raise TopogenError("no connection: " + str(exc)) from None
         except InitializationError as exc:
             raise TopogenError(
@@ -360,6 +366,19 @@ class Renderer:
             # need to sort interface list by slot
             interfaces.sort(key=lambda x: x.slot)
 
+            # hack for IOL
+            if self.args.template == "iol":
+                leftover = 4 - len(interfaces) % 4
+                if leftover in range(1, 4):  # 1, 2 or 3
+                    for _ in range(leftover):
+                        interfaces.append(
+                            Interface(
+                                IPv4Interface("0.0.0.0/0"),
+                                description="unused",
+                                slot=0,
+                            )
+                        )
+
             loopback = IPv4Interface(next(self.loopbacks))
             node = Node(
                 hostname=f"R{node_index+1}",
@@ -371,6 +390,7 @@ class Renderer:
             config = self.template.render(
                 config=self.config,
                 node=node,
+                date=datetime.utcnow(),
                 origin="" if node_index != core else dns_addr,
             )
             graph.nodes[node_index]["cml2node"].config = config

@@ -1,0 +1,69 @@
+! Last configuration change at {{ date }}
+!
+version 15.9
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname {{ node.hostname }}
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging console
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+no service config
+enable password {{ config.password }}
+ip classless
+ip subnet-zero
+ip domain lookup
+ip name-server {{ config.nameserver }}
+ip domain name {{ config.domainname }}
+crypto key generate rsa modulus 1024
+ip ssh server algorithm authentication password
+username {{ config.username }} privilege 15 secret {{ config.password }}
+cdp run
+!
+{%- if origin %}
+ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
+!
+{%- endif %}
+int Loopback0
+    ip address {{ node.loopback.ip }} {{ node.loopback.netmask }}
+!
+router ospf 1
+    passive-interface Loopback0
+    network {{ node.loopback.ip }} 0.0.0.0 area 0
+    {%- for iface in node.interfaces %}
+    network {{ iface.address.ip }} 0.0.0.0 area 0
+    {%- endfor %}
+    {%- if origin %}
+    default-information originate
+    {%- endif %}
+!
+{%- for iface in node.interfaces %}
+interface Ethernet{{ loop.index0 // 4 }}/{{ loop.index0 % 4 }}
+    {%- if iface.description %}
+    description {{ iface.description }}
+    {%- endif %}
+    {%- if iface.description == "unused" %}
+    shutdown
+    {%- else %}
+    ip address {{ iface.address.ip }} {{ iface.address.netmask }}
+    cdp enable
+    no shutdown
+    {%- endif %}
+!
+{%- endfor %}
+line vty 0 4
+    transport input ssh telnet
+    exec-timeout 720 0
+    login local
+line con 0
+    password {{ config.password }}
+!
+end

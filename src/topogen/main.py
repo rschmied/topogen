@@ -137,6 +137,9 @@ def main():
         cfg.save(args.configfile)
         return 0
 
+    if args.insecure:
+        args.cafile = None
+
     if args.listtemplates:
         print("Available templates: ", ", ".join(get_templates()))
         return 0

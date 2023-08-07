@@ -5,6 +5,7 @@ venv
 .vscode
 .ipynb_checkpoints
 .python-version
+.ropeproject
 __pycache__
 
 # VIM
