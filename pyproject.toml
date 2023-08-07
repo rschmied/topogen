@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "topogen"
-version = "0.1.3"
+version = "0.1.4"
 description = "generate test topology files and configurations for CML2"
 authors = ["Ralph Schmieder <rschmied@cisco.com>"]
 
@@ -8,11 +8,11 @@ authors = ["Ralph Schmieder <rschmied@cisco.com>"]
 topogen = "topogen.main:main"
 
 [tool.poetry.dependencies]
-python = "^3.8,<3.11"
+python = "^3.8.1,<3.11"
 networkx = "^2.8.2"
 Jinja2 = "^3.1.2"
-virl2-client = "^2.3.0"
-pyserde = {extras = ["toml"], version = "^0.7.3"}
+virl2-client = "^2.6.0"
+pyserde = {extras = ["toml"], version = "^0.12.2"}
 enlighten = "^1.10.2"
 numpy = "^1.22.4"
 scipy = "^1.8.1"
@@ -26,7 +26,6 @@ pylint = "^2.14.0"
 # ipykernel = "^6.13.0"
 # plotly = "^5.8.0"
 # nbformat = "^5.4.0"
-types-requests = "^2.27.30"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
