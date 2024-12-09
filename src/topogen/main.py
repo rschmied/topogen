@@ -112,6 +112,7 @@ def get_log_level(level_name: str) -> tuple[int, bool]:
     log_levels = {
         "CRITICAL": logging.CRITICAL,
         "ERROR": logging.ERROR,
+        "WARN": logging.WARNING,
         "WARNING": logging.WARNING,
         "INFO": logging.INFO,
         "DEBUG": logging.DEBUG,

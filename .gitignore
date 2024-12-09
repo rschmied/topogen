@@ -4,7 +4,6 @@ venv
 .venv
 .vscode
 .ipynb_checkpoints
-.python-version
 .ropeproject
 .mise.toml
 __pycache__
