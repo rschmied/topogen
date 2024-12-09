@@ -108,22 +108,34 @@ def create_argparser():
     return parser
 
 
+def get_log_level(level_name: str) -> tuple[int, bool]:
+    log_levels = {
+        "CRITICAL": logging.CRITICAL,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+        "NOTSET": logging.NOTSET,
+    }
+    level_name = level_name.upper()
+    if level_name in log_levels:
+        return log_levels[level_name], False
+    else:
+        return logging.WARNING, True
+
+
 def setup_logging(loglevel: str):
     """sets up the logging, takes the given loglevel and uses the custom,
     colorful log formatter
     """
     logging.basicConfig(level=logging.WARN)
-    level = logging.getLevelName(loglevel.upper())
-    unknown_loglevel = False
-    if isinstance(level, str) and level.startswith("Level"):
-        unknown_loglevel = True
-        level = logging.WARN
+    level, unknown_loglevel = get_log_level(loglevel)
     logging.root.setLevel(level)
     custom_formatter = CustomFormatter()
     for handler in logging.root.handlers:
         handler.setFormatter(custom_formatter)
     if unknown_loglevel:
-        _LOGGER.warning("Unknown log level: %s", level)
+        _LOGGER.warning("Unknown log level: %s", loglevel.upper())
 
 
 def main():

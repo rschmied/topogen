@@ -5,7 +5,7 @@ import logging
 import math
 import os
 from argparse import Namespace
-from datetime import datetime
+from datetime import datetime, timezone
 from ipaddress import IPV4LENGTH, IPv4Interface, IPv4Network
 from typing import Any, List, Set, Tuple, Union
 
@@ -391,7 +391,7 @@ class Renderer:
             config = self.template.render(
                 config=self.config,
                 node=node,
-                date=datetime.utcnow(),
+                date=datetime.now(timezone.utc),
                 origin="" if node_index != core else dns_addr,
             )
             graph.nodes[node_index]["cml2node"].config = config
