@@ -1,4 +1,4 @@
-""" configuration template for a DNS host"""
+"""configuration template for a DNS host"""
 
 from textwrap import dedent
 from typing import List
