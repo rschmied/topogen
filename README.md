@@ -26,11 +26,20 @@ be downloaded from your controller at the `/client` location.
 
 Steps:
 
-1. create a directory topogen
+1. clone this directory
 2. create virtual environment in it `python3 -mvenv .venv`
+3. activate the venv `source .venv/bin/activate` (or with
+   .fish or .bat, ...)
+4. install using `python3 -mpip install -e .`
+
+Alternatively, use Astral/uv:
+
+1. clone this directory
+2. create the venv: `uv venv`
 3. activate the venv `source .venv/bin/activate`
-4. install the wheel `pip install ./topogen-0.1.0-py3-none-any.whl`
-5. manually install the PCL wheel `pip install ./virl2_client-2.4.0+build.2-py3-none-any.whl`
+4. install using `uv sync --frozen`
+
+At this point, the `topogen` command should be available.
 
 ## Configuration
 

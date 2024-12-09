@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from ipaddress import IPv4Network
 
-from serde import deserialize, serialize, SerdeError  # type: ignore
+from serde import deserialize, serialize, SerdeError
 from serde.toml import from_toml, to_toml
 
 _LOGGER = logging.getLogger(__name__)

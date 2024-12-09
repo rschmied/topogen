@@ -6,6 +6,7 @@ venv
 .ipynb_checkpoints
 .python-version
 .ropeproject
+.mise.toml
 __pycache__
 
 # VIM

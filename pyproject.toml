@@ -1,32 +1,22 @@
-[tool.poetry]
+[project]
 name = "topogen"
-version = "0.1.4"
-description = "generate test topology files and configurations for CML2"
-authors = ["Ralph Schmieder <rschmied@cisco.com>"]
+version = "0.2.0"
+description = "Generate test topology files and configurations for CML2"
+readme = "README.md"
+authors = [{ name = "Ralph Schmieder", email = "rschmied@cisco.com" }]
+requires-python = ">=3.12"
+dependencies = [
+  "enlighten==1.13.0",
+  "httpx>=0.27.0,<0.28.0",
+  "jinja2==3.1.4",
+  "networkx==3.4.2",
+  "pyserde[toml]>=0.22.2",
+  "virl2-client==2.8.0",
+]
 
-[tool.poetry.scripts]
-topogen = "topogen.main:main"
-
-[tool.poetry.dependencies]
-python = "^3.8.1,<3.11"
-networkx = "^2.8.2"
-Jinja2 = "^3.1.2"
-virl2-client = "^2.6.0"
-pyserde = {extras = ["toml"], version = "^0.12.2"}
-enlighten = "^1.10.2"
-numpy = "^1.22.4"
-scipy = "^1.8.1"
-wheel = "^0.37.1"
-
-[tool.poetry.dev-dependencies]
-pylama = "^8.3.8"
-black = "^22.3.0"
-mypy = "^0.960"
-pylint = "^2.14.0"
-# ipykernel = "^6.13.0"
-# plotly = "^5.8.0"
-# nbformat = "^5.4.0"
+[project.scripts]
+topogen = "topogen:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

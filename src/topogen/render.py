@@ -18,6 +18,7 @@ from jinja2 import (
     TemplateNotFound,
     select_autoescape,
 )
+
 # from httpx import ConnectionError, HTTPError  # pylint: disable=W0622
 from httpx import ConnectTimeout, HTTPError
 from virl2_client import ClientLibrary, InitializationError
