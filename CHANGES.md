@@ -3,7 +3,11 @@
 This file lists changes.
 
 - version 0.2.0+dev
-  currently work in progress
+  adapted some typing
+  renamed iol.jinja2 to iol-xe.jnja.2
+  added special lxc frr variant
+  constrain number of node cli arg
+  fix weird bug when DNS host is selected as the central node
 - version 0.1.4
   - added an iol template
   - removed requests and associated libraries
