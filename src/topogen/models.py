@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, replace
 from ipaddress import IPv4Address, IPv4Interface
-from typing import List, Optional
 
 
 class TopogenError(Exception):
@@ -46,7 +45,7 @@ class CoordsGenerator:
 
 
 @dataclass
-class Interface:
+class TopogenInterface:
     """interface of a node, slot is the physical slot in the device"""
 
     address: IPv4Interface
@@ -55,12 +54,12 @@ class Interface:
 
 
 @dataclass
-class Node:
+class TopogenNode:
     """a node of a topology"""
 
     hostname: str
-    loopback: Optional[IPv4Interface]
-    interfaces: List[Interface]
+    loopback: IPv4Interface | None
+    interfaces: list[TopogenInterface]
 
 
 @dataclass

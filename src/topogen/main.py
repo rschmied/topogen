@@ -16,6 +16,15 @@ from topogen.colorlog import CustomFormatter
 _LOGGER = logging.getLogger(__name__)
 
 
+def valid_node_count(value):
+    ivalue = int(value)
+    if ivalue < 2 or ivalue > 1000:
+        raise argparse.ArgumentTypeError(
+            f"invalid value {value}. Valid values are from 2-1000."
+        )
+    return ivalue
+
+
 def create_argparser():
     """create the argparser for topogen"""
     parser = argparse.ArgumentParser(
@@ -103,7 +112,10 @@ def create_argparser():
         help='mode of operation, default is "%(default)s"',
     )
     parser.add_argument(
-        "nodes", nargs="?", type=int, help="Number of nodes to generate"
+        "nodes",
+        nargs="?",
+        type=valid_node_count,
+        help="Number of nodes to generate (2-1000)",
     )
     return parser
 

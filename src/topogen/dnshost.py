@@ -1,15 +1,14 @@
 """configuration template for a DNS host"""
 
 from textwrap import dedent
-from typing import List
 
 from jinja2 import BaseLoader, Environment
 
 from topogen.config import Config
-from topogen.models import DNShost, Node
+from topogen.models import DNShost, TopogenNode
 
 
-def dnshostconfig(cfg: Config, node: Node, hosts: List[DNShost]) -> str:
+def dnshostconfig(cfg: Config, node: TopogenNode, hosts: list[DNShost]) -> str:
     """renders the DNS host template"""
     basic_config = dedent(
         r"""

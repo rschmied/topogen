@@ -1,0 +1,40 @@
+!
+frr version 10.2
+frr defaults traditional
+hostname {{ node.hostname }}
+log syslog informational
+no ipv6 forwarding
+service integrated-vtysh-config
+!
+int lo
+    ip address {{ node.loopback.with_prefixlen }}
+    ip ospf passive
+!
+{%- if origin %}
+ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
+!
+{%- endif %}
+router ospf
+    ospf router-id {{ node.loopback.ip }}
+    network {{ node.loopback.with_prefixlen }} area 0
+    {%- for iface in node.interfaces %}
+    network {{ iface.address.with_prefixlen }} area 0
+    {%- endfor %}
+    {%- if origin %}
+    default-information originate
+    {%- endif %}
+!
+{%- for iface in node.interfaces %}
+interface eth{{ loop.index0 }}
+    {%- if iface.description %}
+    description {{ iface.description }}
+    {%- endif %}
+    {%- if iface.description == "unused" %}
+    shutdown
+    {%- else %}
+    ip address {{ iface.address.with_prefixlen }}
+    no shutdown
+    {%- endif %}
+!
+{%- endfor %}
+!

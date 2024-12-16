@@ -39,6 +39,11 @@ Alternatively, use Astral/uv:
 3. activate the venv `source .venv/bin/activate`
 4. install using `uv sync --frozen`
 
+If the Networkx mode (`--mode nx`) should be used, then the following
+command is required to install SciPy and NumPy dependencies.
+
+5. install `uv sync --all-extras --dev --frozen`
+
 At this point, the `topogen` command should be available.
 
 ## Configuration

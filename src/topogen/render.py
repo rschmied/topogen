@@ -7,10 +7,12 @@ import os
 from argparse import Namespace
 from datetime import datetime, timezone
 from ipaddress import IPV4LENGTH, IPv4Interface, IPv4Network
-from typing import Any, List, Set, Tuple, Union
+from typing import Any, Set, Tuple, Union
 
 import enlighten
 import networkx as nx
+
+from httpx import ConnectTimeout, HTTPError
 from jinja2 import (
     Environment,
     PackageLoader,
@@ -18,22 +20,20 @@ from jinja2 import (
     TemplateNotFound,
     select_autoescape,
 )
-
-# from httpx import ConnectionError, HTTPError  # pylint: disable=W0622
-from httpx import ConnectTimeout, HTTPError
 from virl2_client import ClientLibrary, InitializationError
-from virl2_client.models import Lab
+from virl2_client.models import Interface, Lab, Node
 
 from topogen import templates
 from topogen.config import Config
 from topogen.dnshost import dnshostconfig
+from topogen.lxcfrr import lxcfrr_bootconfig
 from topogen.models import (
     CoordsGenerator,
     DNShost,
-    Interface,
-    Node,
     Point,
     TopogenError,
+    TopogenInterface,
+    TopogenNode,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ EXT_CON_NAME = "ext-conn-0"
 DNS_HOST_NAME = "dns-host"
 
 
-def get_templates() -> List[str]:
+def get_templates() -> list[str]:
     """get all available templates in the package"""
     return [
         t[: -len(Renderer.J2SUFFIX)]
@@ -178,7 +178,7 @@ class Renderer:
             ) from exc
 
     @staticmethod
-    def new_interface(cmlnode):
+    def new_interface(cmlnode: Node) -> Interface:
         """create a new CML interface for the given node"""
         iface = cmlnode.next_available_interface()
         if iface is None:
@@ -189,7 +189,7 @@ class Renderer:
         """create a new random network using NetworkX"""
 
         # cluster size
-        size = int(self.args.nodes / 4)
+        size = int(self.args.nodes / 8)
         size = max(size, 20)
 
         # how many clusters? ensure at least one
@@ -322,7 +322,7 @@ class Renderer:
 
         # prepare DNS configuration
         self.config.nameserver = str(dns_addr.ip)
-        dns_zone: List[DNShost] = []
+        dns_zone: list[DNShost] = []
 
         # link the two
         self.lab.create_link(
@@ -338,7 +338,7 @@ class Renderer:
 
         _LOGGER.warning("Creating node configurations")
         for node_index, nbrs in graph.adj.items():
-            interfaces: List[Interface] = []
+            interfaces: list[TopogenInterface] = []
 
             for _, eattr in nbrs.items():
                 prefix = eattr["prefix"]
@@ -347,7 +347,9 @@ class Renderer:
 
                 addr = IPv4Interface(f"{next(hosts)}/{prefix.netmask}")
                 label = format_interface_description(order, node_index)
-                interfaces.append(Interface(addr, label, slot=order[node_index].slot))
+                interfaces.append(
+                    TopogenInterface(addr, label, slot=order[node_index].slot)
+                )
                 dns_zone.append(DNShost(format_dns_entry(order, node_index), addr.ip))
 
             if node_index == core:
@@ -357,9 +359,16 @@ class Renderer:
                     core_iface,
                 )
 
-                pair = {core: core_iface, 0: dns_iface}
+                # Use a stupidly high node number for the DNS host, otherwise,
+                # in case the DNS host is selected as the central node, the
+                # pair would only have one element (prior to this, 0 was used
+                # as the key).
+                pair = {core: core_iface, 999999: dns_iface}
                 label = format_interface_description(pair, node_index)
-                interfaces.append(Interface(dns_via, label, slot=core_iface.slot))
+                assert core_iface.slot is not None
+                interfaces.append(
+                    TopogenInterface(dns_via, label, slot=core_iface.slot)
+                )
                 dns_zone.append(DNShost(format_dns_entry(pair, node_index), dns_via.ip))
 
                 _LOGGER.warning("DNS host link")
@@ -373,7 +382,7 @@ class Renderer:
                 if leftover in range(1, 4):  # 1, 2 or 3
                     for _ in range(leftover):
                         interfaces.append(
-                            Interface(
+                            TopogenInterface(
                                 IPv4Interface("0.0.0.0/0"),
                                 description="unused",
                                 slot=0,
@@ -381,7 +390,7 @@ class Renderer:
                         )
 
             loopback = IPv4Interface(next(self.loopbacks))
-            node = Node(
+            node = TopogenNode(
                 hostname=f"R{node_index+1}",
                 loopback=loopback,
                 interfaces=interfaces,
@@ -394,7 +403,31 @@ class Renderer:
                 date=datetime.now(timezone.utc),
                 origin="" if node_index != core else dns_addr,
             )
-            graph.nodes[node_index]["cml2node"].config = config
+            cmlnode: Node = graph.nodes[node_index]["cml2node"]
+            # this is a special one-off for the LXC / frr variannt
+            if self.args.template == "lxc":
+                nameserver = (
+                    self.config.nameserver if self.config.nameserver else dns_addr.ip
+                )
+                cmlnode.configuration = [
+                    {
+                        "name": "boot.sh",
+                        "content": lxcfrr_bootconfig(
+                            self.config,
+                            node,
+                            ["ospf", "bgp"],
+                            str(nameserver),
+                            False,
+                        ),
+                    },
+                    {
+                        "name": "node.cfg",
+                        "content": config,
+                    },
+                ]
+            else:
+                cmlnode.configuration = config
+            # graph.nodes[node_index]["cml2node"].config = config
 
             dns_zone.append(DNShost(node.hostname.lower(), loopback.ip))
             _LOGGER.warning("Config created for %s", node.hostname)
@@ -402,12 +435,12 @@ class Renderer:
                 nprog.update()  # type: ignore
 
         # finalize the DNS host configuration
-        node = Node(
+        node = TopogenNode(
             hostname=DNS_HOST_NAME,
             loopback=None,
             interfaces=[
-                Interface(dns_addr),
-                Interface(dns_via),
+                TopogenInterface(dns_addr),
+                TopogenInterface(dns_via),
             ],
         )
         dns_zone.append(DNShost(f"{DNS_HOST_NAME}-eth1", dns_addr.ip))
@@ -455,7 +488,7 @@ class Renderer:
 
         # prepare DNS configuration
         self.config.nameserver = str(dns_iface.ip)
-        dns_zone: List[DNShost] = []
+        dns_zone: list[DNShost] = []
 
         # link the two
         self.lab.create_link(
@@ -468,10 +501,10 @@ class Renderer:
             loopback = IPv4Interface(next(self.loopbacks))
             src_iface, dst_iface = self.next_network()
             interfaces = [
-                Interface(src_iface),
-                Interface(prev_iface),
+                TopogenInterface(src_iface),
+                TopogenInterface(prev_iface),
             ]
-            node = Node(
+            node = TopogenNode(
                 hostname=f"R{idx+1}",
                 loopback=loopback,
                 interfaces=interfaces,
@@ -491,12 +524,12 @@ class Renderer:
                 ticks.update()  # type: ignore
 
         # finalize the DNS host configuration
-        node = Node(
+        node = TopogenNode(
             hostname=DNS_HOST_NAME,
             loopback=None,
             interfaces=[
-                Interface(dns_iface),
-                Interface(dns_via),
+                TopogenInterface(dns_iface),
+                TopogenInterface(dns_via),
             ],
         )
         dns_host.config = dnshostconfig(self.config, node, dns_zone)
