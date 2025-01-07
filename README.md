@@ -36,15 +36,16 @@ Alternatively, use Astral/uv:
 
 1. clone this directory
 2. create the venv: `uv venv`
-3. activate the venv `source .venv/bin/activate`
+3. activate the venv `source .venv/bin/activate` (optional, can also
+   run with `uv run`)
 4. install using `uv sync --frozen`
 
 If the Networkx mode (`--mode nx`) should be used, then the following
-command is required to install SciPy and NumPy dependencies.
+command is required instead to install SciPy and NumPy dependencies: `uv sync
+--all-extras --dev --frozen`
 
-5. install `uv sync --all-extras --dev --frozen`
-
-At this point, the `topogen` command should be available.
+At this point, the `topogen` command should be available. Alternatively,
+if you did not activate the venv, use `uv run topogen`.
 
 ## Configuration
 
@@ -154,15 +155,16 @@ that host, a dnsmasq DNS server is running which can resolve all IP addresses
 of all topology router loopbacks.  All topology routers are also using this
 DNS server (assuming they have connectivity to it).
 
-> **Note:** Since the Alpine node does not include dnsmasq by default, it will pull in and
-install this package from the Internet.  Therefore it is required to have Internet
-connectivity for this to work!
-
-Once the network has been created and full connectivity is established, it should
-be possible to SSH/Telnet to all nodes using their node names.
-
-The below shows logging into the Jumphost (at 192.168.255.100) via the controller
-(at 192.168.122.245) and then onward to router `r1` using its name.
+> [!NOTE]
+>
+> Since the Alpine node does not include dnsmasq by default, it
+> will pull in and install this package from the Internet. Therefore it
+> is required to have Internet connectivity for this to work! Once the
+> network has been created and full connectivity is established, it
+> should be possible to SSH/Telnet to all nodes using their node names.
+> The below shows logging into the Jumphost (at 192.168.255.100) via
+> the controller (at 192.168.122.245) and then onward to router `r1`
+> using its name.
 
 ```plain
 rschmied@delle:~/Projects/topogen$ ssh -tp1122 sysuser@192.168.122.245 ssh cisco@192.168.255.100
