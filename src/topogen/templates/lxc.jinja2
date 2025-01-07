@@ -11,7 +11,7 @@ int lo
     ip ospf passive
 !
 {%- if origin %}
-ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
+ip route 0.0.0.0/0 {{ origin.ip }}
 !
 {%- endif %}
 router ospf

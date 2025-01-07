@@ -13,7 +13,8 @@ def lxcfrr_bootconfig(
 ) -> str:
     """renders the DNS host template"""
     basic_config = dedent(
-        r"""#/bin/bash
+        r"""
+        #/bin/bash
         {%- if dhcp %}
         /sbin/udhcpc -i eth0
         {%- endif %}
@@ -22,8 +23,9 @@ def lxcfrr_bootconfig(
         sed -r -e 's/^({{ proto }}d=)no$/\1yes/' -i /etc/frr/daemons
         {%- endfor %}
         echo "nameserver {{ nameserver }}" >/etc/resolv.conf
+        echo "search {{ config.domainname }}" >>/etc/resolv.conf
         """
-    )
+    ).lstrip("\n")
 
     template = Environment(loader=BaseLoader).from_string(basic_config)  # type: ignore
     return template.render(
