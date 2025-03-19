@@ -11,7 +11,7 @@ from topogen.models import TopogenNode
 def lxcfrr_bootconfig(
     cfg: Config, node: TopogenNode, protocols: list[str], nameserver: str, dhcp: bool
 ) -> str:
-    """renders the DNS host template"""
+    """renders the LXC FRR boot.sh config"""
     basic_config = dedent(
         r"""
         #/bin/bash
