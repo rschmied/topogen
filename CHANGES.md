@@ -2,6 +2,7 @@
 
 This file lists changes.
 
+- version 0.2.1 (identical to 0.2.0, but make gh actions happy)
 - version 0.2.0
   - properly configure name server / domain name
   - properly inject default route
