@@ -1,6 +1,6 @@
 [project]
 name = "topogen"
-version = "0.2.1"
+version = "0.2.2"
 authors = [{ name = "Ralph Schmieder", email = "rschmied@cisco.com" }]
 description = "Generate test topology files and configurations for CML2"
 readme = "README.md"
@@ -43,9 +43,9 @@ classifiers = [
 
 requires-python = ">=3.12"
 dependencies = [
-  "enlighten==1.13.0",
-  "jinja2==3.1.4",
-  "networkx==3.4.2",
+  "enlighten>=1",
+  "jinja2>=3",
+  "networkx>=3",
   "pyserde[toml]>=0.22.2",
   "virl2-client>=2.7.0",
 ]
