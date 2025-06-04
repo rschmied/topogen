@@ -41,12 +41,6 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 
-[project.urls]
-Homepage = "https://developer.cisco.com/modeling-labs"
-Repository = "https://github.com/rschmied/topogen"
-Issues = "https://github.com/rschmied/topogen/issues"
-Changelog = "https://github.com/crschmied/topogen/blob/master/CHANGELOG.md"
-
 requires-python = ">=3.12"
 dependencies = [
   "enlighten==1.13.0",
@@ -55,6 +49,12 @@ dependencies = [
   "pyserde[toml]>=0.22.2",
   "virl2-client>=2.7.0",
 ]
+
+[project.urls]
+Homepage = "https://developer.cisco.com/modeling-labs"
+Repository = "https://github.com/rschmied/topogen"
+Issues = "https://github.com/rschmied/topogen/issues"
+Changelog = "https://github.com/crschmied/topogen/blob/master/CHANGELOG.md"
 
 [project.scripts]
 topogen = "topogen:main"
@@ -67,4 +67,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["ruff>=0.8.3"]
+dev = ["mypy>=1.16.0", "ruff>=0.8.3", "types-networkx>=3.5.0.20250531"]
+
+[[tool.mypy.overrides]]
+module = ["enlighten.*", "virl2_client.*"]
+follow_untyped_imports = true
