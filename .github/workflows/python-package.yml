@@ -1,0 +1,64 @@
+# This workflow will install Python dependencies, run tests and lint with a
+# variety of Python versions
+#
+# In addition, code coverage is reported to Coveralls
+#
+# For more information see:
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+#
+# For using output and referencing it in other steps
+# https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions#58035262
+
+name: Python package
+
+on: [push]
+
+jobs:
+  build:
+    name: "Build package"
+    if: startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          # Install a specific version of uv.
+          version: "0.7.9"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # - name: Create the version file
+      #   run: |
+      #     ./version.sh
+      #     cat src/eve2cml/_version.py
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Check code
+        run: |
+          uv run mypy --check-untyped-def src
+          uv run ruff check
+
+      - name: Run tests and check coverage
+        run: |
+          uv run coverage run -m pytest
+          uv run coverage lcov
+
+      - name: Code Coverage
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
