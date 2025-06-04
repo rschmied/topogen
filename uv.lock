@@ -499,6 +499,7 @@ all = [
 dev = [
     { name = "mypy" },
     { name = "ruff" },
+    { name = "types-networkx" },
 ]
 
 [package.metadata]
@@ -517,6 +518,19 @@ provides-extras = ["all"]
 dev = [
     { name = "mypy", specifier = ">=1.16.0" },
     { name = "ruff", specifier = ">=0.8.3" },
+    { name = "types-networkx", specifier = ">=3.5.0.20250531" },
+]
+
+[[package]]
+name = "types-networkx"
+version = "3.5.0.20250531"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4c/85/fa621cd74f0613a7710d8987fd4fd7c5287de6f32e8c46268803328acb6a/types_networkx-3.5.0.20250531.tar.gz", hash = "sha256:e8e9adfd0cdb7255e822d029163d1ef651e12cae4a3c767198b8f3e899118ca7", size = 64325, upload-time = "2025-05-31T03:04:25.244Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/ae/ee58b15d1f8bd4fe142d3c28213c9c45feefa993a77536733903d9d42fcf/types_networkx-3.5.0.20250531-py3-none-any.whl", hash = "sha256:84a3163c802a430a90003444eb37a7a2e59206125e5a308f5ccb00434333d2f4", size = 150419, upload-time = "2025-05-31T03:04:23.977Z" },
 ]
 
 [[package]]
