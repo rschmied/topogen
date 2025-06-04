@@ -67,7 +67,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = [
-    "mypy>=1.16.0",
-    "ruff>=0.8.3",
-]
+dev = ["mypy>=1.16.0", "ruff>=0.8.3"]
+
+[[tool.mypy.overrides]]
+module = ["enlighten.*", "virl2_client.*"]
+follow_untyped_imports = true

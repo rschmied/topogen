@@ -278,7 +278,7 @@ class Renderer:
             for node_index in [src, dst]:
                 node = graph.nodes[node_index]
                 if node.get("cml2node") is None:
-                    cml2node = self.create_router(f"R{node_index+1}", node["pos"])
+                    cml2node = self.create_router(f"R{node_index + 1}", node["pos"])
                     _LOGGER.info("router: %s", cml2node.label)
                     node["cml2node"] = cml2node
                     if self.args.progress:
@@ -391,7 +391,7 @@ class Renderer:
 
             loopback = IPv4Interface(next(self.loopbacks))
             node = TopogenNode(
-                hostname=f"R{node_index+1}",
+                hostname=f"R{node_index + 1}",
                 loopback=loopback,
                 interfaces=interfaces,
             )
@@ -404,12 +404,14 @@ class Renderer:
                 origin="" if node_index != core else dns_addr,
             )
             cmlnode: Node = graph.nodes[node_index]["cml2node"]
+            if cmlnode is None:
+                continue
             # this is a special one-off for the LXC / frr variannt
             if self.args.template == "lxc":
                 nameserver = (
                     self.config.nameserver if self.config.nameserver else dns_addr.ip
                 )
-                cmlnode.configuration = [
+                cfg = [
                     {
                         "name": "boot.sh",
                         "content": lxcfrr_bootconfig(
@@ -425,9 +427,9 @@ class Renderer:
                         "content": config,
                     },
                 ]
+                cmlnode.configuration = cfg  # type: ignore[method-assign]
             else:
-                cmlnode.configuration = config
-            # graph.nodes[node_index]["cml2node"].config = config
+                cmlnode.configuration = config  # type: ignore[method-assign]
 
             dns_zone.append(DNShost(node.hostname.lower(), loopback.ip))
             _LOGGER.warning("Config created for %s", node.hostname)
@@ -505,7 +507,7 @@ class Renderer:
                 TopogenInterface(prev_iface),
             ]
             node = TopogenNode(
-                hostname=f"R{idx+1}",
+                hostname=f"R{idx + 1}",
                 loopback=loopback,
                 interfaces=interfaces,
             )
