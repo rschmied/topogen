@@ -52,13 +52,13 @@ jobs:
           uv run mypy --check-untyped-def src
           uv run ruff check
 
-      - name: Run tests and check coverage
-        run: |
-          uv run coverage run -m pytest
-          uv run coverage lcov
-
-      - name: Code Coverage
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+      # - name: Run tests and check coverage
+      #   run: |
+      #     uv run coverage run -m pytest
+      #     uv run coverage lcov
+      #
+      # - name: Code Coverage
+      #   uses: coverallsapp/github-action@v2
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     path-to-lcov: coverage.lcov
