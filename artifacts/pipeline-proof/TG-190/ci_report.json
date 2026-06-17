@@ -1,0 +1,115 @@
+{
+  "artifact_doc_version": "v1.0.0",
+  "artifact_date_modified": "2026-06-13",
+  "schema": "topogen-ci-report-v1",
+  "jira_key": "TG-190",
+  "lab_id": "253b6661-3bdf-4148-bacf-fe57d5707bb0",
+  "lab_title": "TG-190-e2e-pass",
+  "status": "pass",
+  "finished_at": "2026-06-13T04:14:56+00:00",
+  "mgmt_sync": {
+    "mode": "slaac",
+    "synced": 6,
+    "total": 6,
+    "mapping": {
+      "iosv-01": "2001:db8:1700:21f8:7ec0::c",
+      "iosv-02": "2001:db8:1700:21f8:7ec0::47",
+      "iosv-03": "2001:db8:1700:21f8:7ec0::49",
+      "iosv-04": "2001:db8:1700:21f8:7ec0::39",
+      "iosv-05": "2001:db8:1700:21f8:7ec0::30",
+      "iosv-06": "2001:db8:1700:21f8:7ec0::3d"
+    }
+  },
+  "gates": {},
+  "config_extract": {
+    "routers": 6,
+    "extracted": 6,
+    "nodes": {
+      "R1": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R2": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R3": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R4": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R5": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R6": {
+        "state": "BOOTED",
+        "ok": true
+      }
+    },
+    "ci_aliases": {
+      "routers": 6,
+      "applied": 6,
+      "saved": 6,
+      "nodes": {
+        "R1": {
+          "label": "R1",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::c",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_600170021f87ec0c show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::c\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::c",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        },
+        "R2": {
+          "label": "R2",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::47",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_00170021f87ec047 show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::47\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::47",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        },
+        "R3": {
+          "label": "R3",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::49",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_00170021f87ec049 show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::49\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::49",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        },
+        "R4": {
+          "label": "R4",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::39",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_00170021f87ec039 show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::39\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::39",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        },
+        "R5": {
+          "label": "R5",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::30",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_00170021f87ec030 show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::30\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::30",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        },
+        "R6": {
+          "label": "R6",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::3d",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet0/5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_00170021f87ec03d show ipv6 interface GigabitEthernet0/5 | include 2001:db8:1700:21f8:7ec0::3d\ninterface GigabitEthernet0/5\n description OOB Mgmt | TG-190 | 2001:db8:1700:21f8:7ec0::3d",
+          "via": "cml-console",
+          "ok": true,
+          "saved": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{# File Chain (see DEVELOPER.md):
+# Doc Version: v1.0.1
+# Date Modified: 2026-06-13
+#
+# - Called by: iosv*.jinja2 templates via {% include %}
+# - Reads from: mgmt context (ipv4_dhcp, ipv6_mode, mgmt_vrf, slot)
+# - Writes to: IOSv OOB GigabitEthernet0/N mgmt stanza
+# - Calls into: None (template partial)
+#}
+{%- if mgmt and mgmt.enabled %}
+{%- set ipv4_dhcp = mgmt.ipv4_dhcp | default(false) %}
+{%- set ipv6_mode = mgmt.ipv6_mode | default(none) %}
+{%- set ipv6_only = ipv6_mode and not ipv4_dhcp %}
+{%- if ipv6_mode and ipv6_mode != 'static' %}
+ipv6 unicast-routing
+!
+{%- endif %}
+{%- if mgmt.vrf %}
+{%- if ipv6_mode %}
+vrf definition {{ mgmt.vrf }}
+ rd 1:{{ mgmt.slot }}
+ address-family ipv4
+ exit-address-family
+ address-family ipv6
+ exit-address-family
+!
+{%- else %}
+ip vrf {{ mgmt.vrf }}
+ rd 1:{{ mgmt.slot }}
+!
+{%- endif %}
+{%- endif %}
+interface GigabitEthernet0/{{ mgmt.slot }}
+    description OOB Management
+    {%- if mgmt.vrf %}
+    {%- if ipv6_mode %}
+    vrf forwarding {{ mgmt.vrf }}
+    {%- else %}
+    ip vrf forwarding {{ mgmt.vrf }}
+    {%- endif %}
+    {%- endif %}
+    {%- if ipv4_dhcp %}
+    ip address dhcp
+    {%- elif ipv6_only %}
+    no ip address
+    {%- else %}
+    {%- for iface in node.interfaces if (iface.description | default('')) == 'OOB Management' %}
+    {%- if iface.address %}
+    ip address {{ iface.address.ip }} {{ iface.address.netmask }}
+    {%- endif %}
+    {%- endfor %}
+    {%- endif %}
+    {%- if ipv6_mode %}
+    ipv6 enable
+    {%- if ipv6_mode == 'slaac' %}
+    {% include '_static_link_local.jinja2' %}
+    ipv6 address autoconfig
+    {%- elif ipv6_mode == 'dhcpv6' %}
+    {% include '_static_link_local.jinja2' %}
+    ipv6 address dhcp
+    {%- elif ipv6_mode == 'static' %}
+    ipv6 address {{ mgmt.ipv6_address }}
+    {% include '_static_link_local.jinja2' %}
+    {%- endif %}
+    {%- endif %}
+    no cdp enable
+    no shutdown
+!
+{%- if mgmt.gw %}
+{%- if mgmt.vrf %}
+ip route vrf {{ mgmt.vrf }} 0.0.0.0 0.0.0.0 {{ mgmt.gw }}
+{%- else %}
+ip route 0.0.0.0 0.0.0.0 {{ mgmt.gw }}
+{%- endif %}
+{%- endif %}
+{%- if mgmt.ipv6_gw and ipv6_mode == 'static' %}
+{%- if mgmt.ipv6_gw_vrf %}
+ipv6 route vrf {{ mgmt.ipv6_gw_vrf }} ::/0 {{ mgmt.ipv6_gw }}
+{%- else %}
+ipv6 route ::/0 {{ mgmt.ipv6_gw }}
+{%- endif %}
+{%- endif %}
+{%- set mgmt_iface = 'GigabitEthernet0/' ~ mgmt.slot %}
+{% include '_topogen_test_alias.jinja2' %}
+{%- endif %}

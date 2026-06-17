@@ -1,0 +1,9 @@
+---
+- name: Verify IOS-XE reachability with read-only facts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Gather minimal IOS-XE facts
+      cisco.ios.ios_facts:
+        gather_subset:
+          - min

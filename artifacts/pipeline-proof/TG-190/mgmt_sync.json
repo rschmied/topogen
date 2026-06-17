@@ -1,0 +1,56 @@
+{
+  "artifact_doc_version": "v1.0.0",
+  "artifact_date_modified": "2026-06-13",
+  "mode": "slaac",
+  "lab_id": "253b6661-3bdf-4148-bacf-fe57d5707bb0",
+  "nac_root": "C:\\Users\\rohosfor\\Documents\\Projects Folder\\topogen\\out\\TG-190-e2e-pass\\nac",
+  "mgmt_interface": "GigabitEthernet0/5",
+  "routers": {
+    "R1": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::c",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R2": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::47",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R3": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::49",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R4": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::39",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R5": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::30",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R6": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0::3d",
+      "source": "cml_snooped",
+      "error": null
+    }
+  },
+  "total_routers": 6,
+  "synced": 6,
+  "mapping": {
+    "iosv-01": "2001:db8:1700:21f8:7ec0::c",
+    "iosv-02": "2001:db8:1700:21f8:7ec0::47",
+    "iosv-03": "2001:db8:1700:21f8:7ec0::49",
+    "iosv-04": "2001:db8:1700:21f8:7ec0::39",
+    "iosv-05": "2001:db8:1700:21f8:7ec0::30",
+    "iosv-06": "2001:db8:1700:21f8:7ec0::3d"
+  }
+}

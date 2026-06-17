@@ -1,0 +1,16 @@
+! EEM: Authenticate trustpoint CA-ROOT-SELF and save. CA-ROOT only.
+! Trigger: syslog "Certificate server now enabled" (PKI-6-CS_ENABLED). Only the CA router sees this; clients use a different trigger (e.g. TIME_DONE set or timer).
+! Paste under event manager (or after "event manager session cli" if present).
+!
+no event manager applet PKI-AUTHENTICATE-SAVE
+event manager applet PKI-AUTHENTICATE-SAVE authorization bypass
+ event syslog pattern "Certificate server now enabled"
+ action 1.0 cli command "enable"
+ action 1.1 cli command "configure terminal"
+ action 1.2 cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 1.3 wait 2
+ action 1.4 cli command "yes" pattern ".*"
+ action 1.5 cli command " "
+ action 1.6 cli command "end"
+ action 1.7 cli command "write memory"
+end

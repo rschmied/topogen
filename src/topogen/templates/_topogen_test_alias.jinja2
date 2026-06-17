@@ -1,0 +1,48 @@
+{# File Chain (see DEVELOPER.md):
+
+
+
+# Doc Version: v1.3.0
+
+
+
+# Date Modified: 2026-06-14
+
+
+
+#
+
+
+
+# - Called by: _iosv_mgmt_oob.jinja2, _csr_mgmt_oob.jinja2
+
+
+
+# - Reads from: mgmt.ipv6_mode, mgmt_iface (set by parent include)
+
+
+
+# - Writes to: global exec alias for OOB IPv6 interface show command
+
+
+
+#}
+
+
+
+{%- if mgmt and mgmt.enabled and mgmt.ipv6_mode %}
+
+
+
+alias exec topogen-test show ipv6 interface {{ mgmt_iface }}
+
+
+
+!
+
+
+
+{%- endif %}
+
+
+

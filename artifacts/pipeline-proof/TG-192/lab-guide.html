@@ -1,0 +1,4 @@
+<h3>TopoGen CI — TG-192</h3><p>Post-SLAAC management sync (lab guide)</p><ul><li><b>R1</b> GigabitEthernet5: <code>2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02</code> — alias <code>slaac_c05054fffe345b02</code></li>
+<li><b>R2</b> GigabitEthernet5: <code>2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea</code> — alias <code>slaac_c05054fffeab43ea</code></li>
+<li><b>R3</b> GigabitEthernet5: <code>2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89</code> — alias <code>slaac_c05054fffe801e89</code></li>
+<li><b>R4</b> GigabitEthernet5: <code>2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162</code> — alias <code>slaac_c05054fffe43c162</code></li></ul><p>Router exec aliases (all nodes):</p><ul><li><code>slaac</code> → <code>show ipv6 interface GigabitEthernet5 | include Global</code></li><li><code>uptime</code> → <code>show version | include uptime</code></li><li><code>slaac_&lt;token&gt;</code> → per-router Gi5 address (token = last 16 hex chars of SLAAC)</li></ul>

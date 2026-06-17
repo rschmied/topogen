@@ -1,4 +1,49 @@
-"""configuration template for a DNS host"""
+"""
+File Chain (see DEVELOPER.md):
+Doc Version: v1.0.1
+Date Modified: 2026-02-16
+
+- Called by: render.py
+- Purpose: DNS host boot script generator for simple/NX topologies
+
+TopoGen DNS Host Configuration - DNS/NAT Gateway Boot Script Generator
+
+PURPOSE:
+    Generates boot configuration script for Alpine Linux DNS host node used in
+    simple/NX topologies. The DNS host provides DNS resolution, NAT gateway, and
+    routing for lab routers to reach external networks.
+
+WHO READS ME:
+    - render.py: Calls dnshostconfig() when creating simple/NX topologies
+
+WHO I READ:
+    - config.py: Config class for DNS settings, domain name, credentials
+    - models.py: DNShost, TopogenNode data models
+
+DEPENDENCIES:
+    - jinja2: Template rendering (Environment, BaseLoader)
+    - textwrap: dedent() for inline template formatting
+
+KEY EXPORTS:
+    - dnshostconfig(cfg, node, hosts): Returns rendered boot script
+
+DNS HOST FUNCTIONALITY:
+    - dnsmasq: Local DNS server for *.virl.lab domain
+    - iptables NAT: MASQUERADE for outbound internet access
+    - Static routes: Routes to loopback and p2p networks via router
+    - SSH config: Weak crypto for old IOS compatibility
+    - /etc/hosts: Static mappings for all lab routers
+
+NETWORK INTERFACES:
+    - eth0: External/internet interface (DHCP)
+    - eth1: Internal/lab interface (static IP, connects to lab switch)
+
+GENERATED SCRIPT:
+    - Runs on Alpine Linux container at boot
+    - Installs dnsmasq and iptables packages
+    - Configures DNS forwarding and NAT gateway
+    - Sets up routing to lab networks
+"""
 
 from textwrap import dedent
 

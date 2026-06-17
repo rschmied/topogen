@@ -1,0 +1,6 @@
+nac_platform: iosxe
+nac_device_count: 2
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.ios.ios
+ansible_user: '{{ lookup(''env'', ''IOSXE_USERNAME'') }}'
+ansible_password: '{{ lookup(''env'', ''IOSXE_PASSWORD'') }}'

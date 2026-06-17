@@ -1,0 +1,17 @@
+hostname: R2
+role: router
+template: iosv
+device_template: iosv
+loopbacks:
+- name: Loopback0
+  ipv4: 10.20.0.2/32
+interfaces:
+- name: GigabitEthernet0/0
+  slot: 0
+  ipv4: 10.10.0.2/16
+  description: mgmt flat
+- name: GigabitEthernet0/5
+  slot: 5
+  ipv4: 10.254.0.2/16
+  description: OOB Management
+  vrf: Mgmt-vrf

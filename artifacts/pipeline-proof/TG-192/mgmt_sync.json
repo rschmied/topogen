@@ -1,0 +1,40 @@
+{
+  "mode": "slaac",
+  "lab_id": "2aa9099f-3aa5-4e2a-aa3a-8c752a1a988e",
+  "nac_root": "out\\TG-192-e2e-pass\\nac",
+  "mgmt_interface": "GigabitEthernet5",
+  "routers": {
+    "R1": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R2": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R3": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89",
+      "source": "cml_snooped",
+      "error": null
+    },
+    "R4": {
+      "state": "BOOTED",
+      "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162",
+      "source": "cml_snooped",
+      "error": null
+    }
+  },
+  "total_routers": 4,
+  "synced": 4,
+  "mapping": {
+    "iosv-01": "2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02",
+    "iosv-02": "2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea",
+    "iosv-03": "2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89",
+    "iosv-04": "2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162"
+  }
+}

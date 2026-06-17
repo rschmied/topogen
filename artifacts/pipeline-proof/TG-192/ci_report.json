@@ -1,0 +1,85 @@
+{
+  "schema": "topogen-ci-report-v1",
+  "jira_key": "TG-192",
+  "lab_id": "2aa9099f-3aa5-4e2a-aa3a-8c752a1a988e",
+  "lab_title": "TG-192-e2e-pass",
+  "status": "pass",
+  "finished_at": "2026-06-13T00:56:49+00:00",
+  "mgmt_sync": {
+    "mode": "slaac",
+    "synced": 4,
+    "total": 4,
+    "mapping": {
+      "iosv-01": "2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02",
+      "iosv-02": "2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea",
+      "iosv-03": "2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89",
+      "iosv-04": "2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162"
+    }
+  },
+  "gates": {},
+  "config_extract": {
+    "routers": 4,
+    "extracted": 4,
+    "nodes": {
+      "R1": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R2": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R3": {
+        "state": "BOOTED",
+        "ok": true
+      },
+      "R4": {
+        "state": "BOOTED",
+        "ok": true
+      }
+    },
+    "ci_aliases": {
+      "routers": 4,
+      "applied": 4,
+      "saved": 4,
+      "nodes": {
+        "R1": {
+          "label": "R1",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_c05054fffe345b02 show ipv6 interface GigabitEthernet5 | include 2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02\ninterface GigabitEthernet5\n description OOB Mgmt | TG-192 | 2001:db8:1700:21f8:7ec0:5054:ff:fe34:5b02",
+          "ok": true,
+          "via": "pyats-or-ssh",
+          "saved": true
+        },
+        "R2": {
+          "label": "R2",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_c05054fffeab43ea show ipv6 interface GigabitEthernet5 | include 2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea\ninterface GigabitEthernet5\n description OOB Mgmt | TG-192 | 2001:db8:1700:21f8:7ec0:5054:ff:feab:43ea",
+          "ok": true,
+          "via": "pyats-or-ssh",
+          "saved": true
+        },
+        "R3": {
+          "label": "R3",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_c05054fffe801e89 show ipv6 interface GigabitEthernet5 | include 2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89\ninterface GigabitEthernet5\n description OOB Mgmt | TG-192 | 2001:db8:1700:21f8:7ec0:5054:ff:fe80:1e89",
+          "ok": true,
+          "via": "pyats-or-ssh",
+          "saved": true
+        },
+        "R4": {
+          "label": "R4",
+          "mgmt_ipv6": "2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162",
+          "state": "BOOTED",
+          "config": "alias exec slaac show ipv6 interface GigabitEthernet5 | include Global\nalias exec uptime show version | include uptime\nalias exec slaac_c05054fffe43c162 show ipv6 interface GigabitEthernet5 | include 2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162\ninterface GigabitEthernet5\n description OOB Mgmt | TG-192 | 2001:db8:1700:21f8:7ec0:5054:ff:fe43:c162",
+          "ok": true,
+          "via": "pyats-or-ssh",
+          "saved": true
+        }
+      }
+    }
+  }
+}

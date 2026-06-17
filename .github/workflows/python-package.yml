@@ -11,9 +11,44 @@
 
 name: Python package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
+  changes:
+    name: "Detect NaC-related changes"
+    if: startsWith(github.ref, 'refs/heads/') || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      nac: ${{ steps.filter.outputs.nac }}
+      cml2: ${{ steps.filter.outputs.cml2 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            nac:
+              - 'src/topogen/nac.py'
+              - 'src/topogen/nac_mgmt_sync.py'
+              - 'src/topogen/cml_user.py'
+              - 'src/topogen/render.py'
+              - 'src/topogen/main.py'
+              - 'tests/test_cml_user_provision.py'
+              - 'src/topogen/templates/**'
+              - 'tests/test_nac_*.py'
+              - 'tests/conftest.py'
+              - 'tests/fixtures/nac/**'
+              - '.github/workflows/python-package.yml'
+            cml2:
+              - 'src/topogen/cml2.py'
+              - 'src/topogen/main.py'
+              - 'src/topogen/render.py'
+              - 'tests/offline_flag_matrix.py'
+              - 'tests/test_cml2_*.py'
+              - 'tests/conftest.py'
+              - 'scripts/validate-cml2-offline-matrix.py'
+              - '.github/workflows/python-package.yml'
+
   build:
     name: "Build package"
     if: startsWith(github.ref, 'refs/heads/')
@@ -62,3 +97,85 @@ jobs:
       #   with:
       #     github-token: ${{ secrets.GITHUB_TOKEN }}
       #     path-to-lcov: coverage.lcov
+
+  nac-terraform-plan:
+    name: "NaC Terraform plan contract"
+    needs: changes
+    if: needs.changes.outputs.nac == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.7.9"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Terraform provider/module downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: nac-tf-plugins-${{ runner.os }}-${{ hashFiles('src/topogen/nac.py') }}
+          restore-keys: |
+            nac-tf-plugins-${{ runner.os }}-
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Run NaC terraform plan matrix (TG-161)
+        env:
+          TOPOGEN_TERRAFORM_PLAN: "1"
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugin-cache
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          uv run pytest tests/test_nac_terraform_plan.py -m terraform -v
+
+  cml2-terraform-plan:
+    name: "CML2 Terraform plan contract"
+    needs: changes
+    if: needs.changes.outputs.cml2 == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.7.9"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Terraform provider/module downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: cml2-tf-plugins-${{ runner.os }}-${{ hashFiles('src/topogen/cml2.py') }}
+          restore-keys: |
+            cml2-tf-plugins-${{ runner.os }}-
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Run CML2 terraform plan matrix (40 cases)
+        env:
+          TOPOGEN_CML2_TERRAFORM_PLAN: "1"
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugin-cache
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          uv run pytest tests/test_cml2_terraform_plan.py -m cml2_terraform -v

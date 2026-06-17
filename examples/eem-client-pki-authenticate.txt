@@ -1,0 +1,38 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto client routers
+! - Reads from: CLI (show crypto pki certificates CA-ROOT-SELF), syslog (TIME_DONE set — matches set-clock completion messages)
+! - Writes to: Running-config (crypto pki authenticate accepts CA cert); no delete self / write memory in this version
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-14 | status: unverified — commit when verified working on device
+!
+! EEM applet CLIENT-PKI-AUTHENTICATE: run "crypto pki authenticate CA-ROOT-SELF" and answer "yes".
+! Trigger: syslog containing "TIME_DONE set" (emitted when set-clock completes).
+! If CA cert already present, exit. Else configure terminal, authenticate (pattern "yes/no"), wait 2s, "yes", then cli " " for CR.
+! Minimal version (no delete self / write memory); applet stays in config.
+!
+event manager environment PKI_DONE 0
+event manager session cli username "cisco"
+!
+no event manager applet CLIENT-PKI-AUTHENTICATE
+event manager applet CLIENT-PKI-AUTHENTICATE authorization bypass
+ event syslog pattern "TIME_DONE set"
+ action 90.1  cli command "enable"
+ action 90.2  syslog msg "EEM CLIENT-PKI-AUTHENTICATE: executed [step 90.2]"
+ action 90.3  cli command "terminal length 0"
+ action 90.4  cli command "show crypto pki certificates CA-ROOT-SELF"
+ action 90.5  regexp "CA Certificate" "$_cli_result" match
+ action 90.6  if $_regexp_result eq "1"
+  action 90.7   exit
+  action 90.8  end
+ action 90.9  cli command "configure terminal"
+ action 90.91 cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 90.915 wait 2
+ action 90.92 cli command "yes" pattern ".*"
+ action 90.921 cli command " "
+ action 90.93 cli command "end"
+ action 90.94 syslog msg "EEM CLIENT-PKI-AUTHENTICATE: authenticated CA-ROOT-SELF [step 90.94]"
+end

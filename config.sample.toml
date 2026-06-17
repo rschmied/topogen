@@ -1,0 +1,12 @@
+# Sample configuration for TopoGen
+# Copy this file to `config.toml` or pass it explicitly with `-c path/to/config.toml`.
+
+# IP pools used for generated topologies
+loopbacks = "10.0.0.0/8"
+p2pnets  = "172.16.0.0/12"
+
+# Device configuration defaults
+nameserver = "8.8.8.8"
+domainname = "virl.lab"
+username   = "cisco"
+password   = "cisco"

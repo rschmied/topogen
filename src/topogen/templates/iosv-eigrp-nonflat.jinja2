@@ -1,0 +1,85 @@
+{# File Chain (see DEVELOPER.md):
+# Doc Version: v1.1.5
+# Date Modified: 2026-06-13
+#
+# - Called by: src/topogen/render.py (Jinja render step)
+# - Reads from: Jinja context (config, node, plus feature flags: mgmt, ntp, ntp_oob, archive)
+# - Writes to: Startup-config text embedded into offline YAML, or pushed to the controller (online)
+# - Calls into: None (template-only)
+#}
+hostname {{ node.hostname }}
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+no service config
+enable password {{ config.password }}
+ip classless
+ip subnet-zero
+ip domain lookup
+ip name-server {{ config.nameserver }}
+ip domain name {{ config.domainname }}
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh server algorithm authentication password
+username {{ config.username }} privilege 15 secret {{ config.password }}
+cdp run
+!
+{%- if origin %}
+ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
+!
+{%- endif %}
+int Loopback0
+    ip address {{ node.loopback.ip }} {{ node.loopback.netmask }}
+!
+router eigrp 100
+    passive-interface Loopback0
+    network 10.0.0.0 0.255.255.255
+    network 172.16.0.0 0.15.255.255
+    no auto-summary
+!
+{%- for iface in node.interfaces if (iface.description | default('')) != 'OOB Management' %}
+interface GigabitEthernet0/{{ iface.slot }}
+    {%- if iface.description %}
+    description {{ iface.description }}
+    {%- endif %}
+    ip address {{ iface.address.ip }} {{ iface.address.netmask }}
+    cdp enable
+    no shutdown
+!
+{%- endfor %}
+!
+{% include '_iosv_mgmt_oob.jinja2' %}
+{%- if ntp and ntp.server %}
+{%- if ntp.vrf %}
+ntp server vrf {{ ntp.vrf }} {{ ntp.server }}
+{%- else %}
+ntp server {{ ntp.server }}
+{%- endif %}
+{%- endif %}
+{%- if ntp_oob and ntp_oob.server and ntp_oob.vrf %}
+ntp server vrf {{ ntp_oob.vrf }} {{ ntp_oob.server }}
+{%- endif %}
+!
+{%- if archive %}
+archive
+ log config
+  logging enable
+  notify syslog contenttype plaintext
+  hidekeys
+ path flash:
+ maximum 5
+ write-memory
+!
+alias exec rundiff show archive config differences system:running-config
+!
+{%- endif %}
+line vty 0 4
+    transport input ssh telnet
+    exec-timeout 0 0
+    login local
+line con 0
+    password {{ config.password }}
+    exec-timeout 0 0
+!
+end

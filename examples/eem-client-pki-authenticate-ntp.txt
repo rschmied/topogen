@@ -1,0 +1,47 @@
+! Pasteable block: client PKI authenticate after NTP sync.
+! CA is at 10.10.255.254 — client needs NTP from CA first.
+!
+! 1) Add NTP server (global config, or under vrf if you use mgmt vrf):
+!    ntp server 10.10.255.254
+!    or: ntp server vrf Mgmt-vrf 10.10.255.254
+!
+! 2) Paste the block below under event manager (or after "event manager session cli" if present).
+!    Applet runs 120s after boot, checks "show ntp status" for "Clock is synchronized";
+!    if synced, runs crypto pki authenticate CA-ROOT-SELF (yes) and write memory.
+!
+! --- cut below ---
+!
+ntp server 10.10.255.254
+!
+no event manager applet CLIENT-PKI-AUTHENTICATE-NTP
+event manager applet CLIENT-PKI-AUTHENTICATE-NTP authorization bypass
+ event timer countdown time 120
+ action 0.1 cli command "enable"
+ action 0.2 syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: step 0.2 executed"
+ action 0.3 cli command "terminal length 0"
+ action 0.4 cli command "show ntp status | i sync"
+ action 0.5 syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: step 0.5 NTP status checked"
+ action 0.6 regexp "Clock is synchronized" "$_cli_result" match
+ action 0.7 if $_regexp_result eq "0"
+  action 0.8  syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: NTP not synced, exiting"
+  action 0.9  exit
+  action 0.10 end
+ action 0.11 cli command "show crypto pki certificates CA-ROOT-SELF"
+ action 0.12 syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: step 0.12 cert check done"
+ action 0.13 regexp "CA Certificate" "$_cli_result" match
+ action 0.14 if $_regexp_result eq "1"
+  action 0.15  syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: CA cert already present, exiting"
+  action 0.16  exit
+  action 0.17 end
+ action 0.18 syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: step 0.18 running authenticate"
+ action 0.19 cli command "configure terminal"
+ action 0.20 cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 0.21 wait 2
+ action 0.22 cli command "yes" pattern ".*"
+ action 0.23 cli command " "
+ action 0.24 cli command "end"
+ action 0.25 cli command "write memory"
+ action 0.26 syslog msg "EEM CLIENT-PKI-AUTHENTICATE-NTP: step 0.26 authenticated and saved"
+end
+!
+! --- cut above ---

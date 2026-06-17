@@ -1,0 +1,10 @@
+<!-- File Chain (see DEVELOPER.md):
+     Doc Version: v1.0.0
+     Date Modified: 2026-06-13
+     TG-190 ProveCycle lab guide excerpt (post-SLAAC sync). -->
+<h3>TopoGen CI — TG-190</h3><p>Post-SLAAC management sync (lab guide)</p><ul><li><b>R1</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::c</code> — alias <code>slaac_600170021f87ec0c</code></li>
+<li><b>R2</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::47</code> — alias <code>slaac_00170021f87ec047</code></li>
+<li><b>R3</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::49</code> — alias <code>slaac_00170021f87ec049</code></li>
+<li><b>R4</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::39</code> — alias <code>slaac_00170021f87ec039</code></li>
+<li><b>R5</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::30</code> — alias <code>slaac_00170021f87ec030</code></li>
+<li><b>R6</b> GigabitEthernet0/5: <code>2001:db8:1700:21f8:7ec0::3d</code> — alias <code>slaac_00170021f87ec03d</code></li></ul><p>Router exec aliases (all nodes):</p><ul><li><code>slaac</code> → <code>show ipv6 interface GigabitEthernet0/5 | include Global</code></li><li><code>uptime</code> → <code>show version | include uptime</code></li><li><code>slaac_&lt;token&gt;</code> → per-router Gi5 address (token = last 16 hex chars of SLAAC)</li></ul>

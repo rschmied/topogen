@@ -1,0 +1,35 @@
+# File Chain (see DEVELOPER.md):
+# Doc Version: v1.0.0
+# Date Modified: 2026-06-03
+#
+# - Called by: NaC fixture/snapshot tests for TG-116
+# - Reads from: Canonical one-router IOS-XE contract
+# - Writes to: None (test fixture)
+# - Calls into: docs/nac/iosxe-one-router-golden-contract.md
+#
+# Purpose: Deterministic canonical NaC fixture for single-device IOS-XE output.
+# Blast Radius: Changes affect snapshot and contract validation tests.
+
+iosxe:
+  devices:
+    - name: iosv-01
+      hostname: iosv-01
+      platform: iosxe
+      role: router
+      template: iosv
+      device_template: iosv
+      mgmt:
+        ipv4: 10.254.0.11
+        vrf: Mgmt-vrf
+      loopbacks:
+        - name: Loopback0
+          ipv4: 10.20.0.1/32
+      interfaces:
+        - name: GigabitEthernet0/0
+          ipv4: 10.10.0.1/16
+          description: data-uplink
+          slot: 0
+      metadata:
+        topogen:
+          mode: flat
+          node_id: iosv-01

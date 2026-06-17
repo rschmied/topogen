@@ -1,3 +1,12 @@
+{# File Chain (see DEVELOPER.md):
+# Doc Version: v1.1.3
+# Date Modified: 2026-03-23
+#
+# - Called by: src/topogen/render.py (Jinja render step)
+# - Reads from: Jinja context (config, node, plus feature flags: mgmt, ntp, ntp_oob, archive)
+# - Writes to: Startup-config text embedded into offline YAML, or pushed to the controller (online)
+# - Calls into: None (template-only)
+#}
 ! Last configuration change at {{ date }}
 !
 version 15.9
@@ -28,6 +37,14 @@ ip ssh server algorithm authentication password
 username {{ config.username }} privilege 15 secret {{ config.password }}
 cdp run
 !
+{%- set ns = namespace(seen={}) %}
+{%- for iface in node.interfaces %}
+{%- if iface.vrf and not ns.seen.get(iface.vrf) %}
+ip vrf {{ iface.vrf }}
+!
+{%- set _ = ns.seen.update({iface.vrf: true}) %}
+{%- endif %}
+{%- endfor %}
 {%- if origin %}
 ip route 0.0.0.0 0.0.0.0 {{ origin.ip }}
 !
@@ -53,15 +70,68 @@ interface Ethernet{{ loop.index0 // 4 }}/{{ loop.index0 % 4 }}
     {%- if iface.description == "unused" %}
     shutdown
     {%- else %}
+    {%- if iface.vrf %}
+    ip vrf forwarding {{ iface.vrf }}
+    {%- endif %}
+    {%- if iface.address %}
     ip address {{ iface.address.ip }} {{ iface.address.netmask }}
+    {%- endif %}
     cdp enable
     no shutdown
     {%- endif %}
 !
 {%- endfor %}
+!
+{%- if mgmt and mgmt.enabled %}
+{%- if mgmt.vrf %}
+ip vrf {{ mgmt.vrf }}
+ rd 1:{{ mgmt.slot }}
+!
+{%- endif %}
+interface Ethernet{{ mgmt.slot // 4 }}/{{ mgmt.slot % 4 }}
+    description OOB Management
+    {%- if mgmt.vrf %}
+    ip vrf forwarding {{ mgmt.vrf }}
+    {%- endif %}
+    ip address dhcp
+    no cdp enable
+    no shutdown
+!
+{%- if mgmt.gw %}
+{%- if mgmt.vrf %}
+ip route vrf {{ mgmt.vrf }} 0.0.0.0 0.0.0.0 {{ mgmt.gw }}
+{%- else %}
+ip route 0.0.0.0 0.0.0.0 {{ mgmt.gw }}
+{%- endif %}
+{%- endif %}
+{%- endif %}
+{%- if ntp and ntp.server %}
+{%- if ntp.vrf %}
+ntp server vrf {{ ntp.vrf }} {{ ntp.server }}
+{%- else %}
+ntp server {{ ntp.server }}
+{%- endif %}
+{%- endif %}
+{%- if ntp_oob and ntp_oob.server and ntp_oob.vrf %}
+ntp server vrf {{ ntp_oob.vrf }} {{ ntp_oob.server }}
+{%- endif %}
+!
+{%- if archive %}
+archive
+ log config
+  logging enable
+  notify syslog contenttype plaintext
+  hidekeys
+ path flash:
+ maximum 5
+ write-memory
+!
+alias exec rundiff show archive config differences system:running-config
+!
+{%- endif %}
 line vty 0 4
     transport input ssh telnet
-    exec-timeout 720 0
+    exec-timeout 0 0
     login local
 line con 0
     password {{ config.password }}

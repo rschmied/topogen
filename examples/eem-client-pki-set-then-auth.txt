@@ -1,0 +1,64 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto client routers
+! - Reads from: Event manager environment (TIME_DONE), CLI (show ntp status, show crypto pki certificates)
+! - Writes to: NVRAM (write memory), event manager environment TIME_DONE 1, running-config (crypto pki authenticate), removes this applet
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-15 | status: unverified — set clock then authenticate in one applet; one trigger (90s timer)
+!
+! EEM applet CLIENT-PKI-SET-THEN-AUTH: one-shot 90s after boot. Sets clock (or TIME_DONE if NTP synced), then runs crypto pki authenticate.
+! Single trigger (timer 90s) — no dependency on syslog or event order. Then delete self, write mem.
+! Same authenticate logic as CLIENT-PKI-AUTHENTICATE: pattern "yes/no", wait 2, yes, cli " ".
+!
+! Initial env: event manager environment TIME_DONE 0
+!
+!no event manager applet CLIENT-PKI-SET-THEN-AUTH
+event manager applet CLIENT-PKI-SET-THEN-AUTH authorization bypass
+ event timer countdown time 90
+ action 0.1  cli command "enable"
+ action 0.2  syslog msg "EEM CLIENT-PKI-SET-THEN-AUTH: executed [step 0.2]"
+ action 0.3  cli command "terminal length 0"
+ action 0.4  cli command "show event manager environment | include TIME_DONE"
+ action 0.5  regexp "TIME_DONE 1" "$_cli_result" match
+ action 0.6  if $_regexp_result eq "1"
+  action 0.7   exit
+  action 0.8  end
+ action 1.0  cli command "show ntp status"
+ action 1.1  regexp "Clock is synchronized" "$_cli_result" match
+ action 1.2  if $_regexp_result eq "1"
+  action 1.3   cli command "configure terminal"
+  action 1.4   cli command "event manager environment TIME_DONE 1"
+  action 1.5   cli command "end"
+  action 1.55  cli command "write memory"
+  action 1.6   end
+ action 2.0  if $_regexp_result ne "1"
+  action 2.1   cli command "configure terminal"
+  action 2.2   cli command "do clock set 00:00:01 February 13 2026"
+  action 2.3   cli command "end"
+  action 2.4   cli command "configure terminal"
+  action 2.5   cli command "event manager environment TIME_DONE 1"
+  action 2.6   cli command "end"
+  action 2.65  cli command "write memory"
+  action 2.7  end
+ action 3.0  cli command "show crypto pki certificates CA-ROOT-SELF"
+ action 3.1  regexp "CA Certificate" "$_cli_result" match
+ action 3.2  if $_regexp_result eq "1"
+  action 3.3   syslog msg "EEM CLIENT-PKI-SET-THEN-AUTH: CA cert already present; skip authenticate [step 3.3]"
+  action 3.4   exit
+  action 3.5  end
+ action 4.0  cli command "configure terminal"
+ action 4.1  cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 4.2  wait 2
+ action 4.3  cli command "yes" pattern ".*"
+ action 4.4  cli command " "
+ action 4.5  cli command "end"
+ action 4.6  syslog msg "EEM CLIENT-PKI-SET-THEN-AUTH: authenticated CA-ROOT-SELF [step 4.6]"
+ action 5.0  cli command "configure terminal"
+ action 5.1  cli command "no event manager applet CLIENT-PKI-SET-THEN-AUTH"
+ action 5.2  cli command "end"
+ action 5.3  cli command "write memory"
+ action 5.4  syslog msg "EEM CLIENT-PKI-SET-THEN-AUTH: done; applet removed, write memory [step 5.4]"
+end

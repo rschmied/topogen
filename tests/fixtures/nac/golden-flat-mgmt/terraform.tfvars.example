@@ -1,0 +1,12 @@
+# This scaffold is intentionally driven by nac.yaml through yaml_files = ["nac.yaml"].
+# Supply provider connection settings with environment variables on your runner.
+#
+# Bash:
+#   export IOSXE_URL="https://<lab-device-url>"
+#   export IOSXE_USERNAME="<lab-username>"
+#   export IOSXE_PASSWORD="<lab-password>"
+#
+# PowerShell:
+#   $env:IOSXE_URL = "https://<lab-device-url>"
+#   $env:IOSXE_USERNAME = "<lab-username>"
+#   $env:IOSXE_PASSWORD = "<lab-password>"

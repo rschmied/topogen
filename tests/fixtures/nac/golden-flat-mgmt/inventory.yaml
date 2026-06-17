@@ -1,0 +1,8 @@
+all:
+  hosts:
+    iosv-01:
+      ansible_host: 10.254.0.1
+      platform: iosxe
+    iosv-02:
+      ansible_host: 10.254.0.2
+      platform: iosxe

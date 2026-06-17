@@ -1,0 +1,29 @@
+terraform_input: false
+note: Informational only. NOT a Terraform input. The netascode/nac-iosxe module is
+  driven solely by nac.yaml via yaml_files.
+schema: iosxe-devices-configuration-mvp
+schema_version: 3.0.0
+canonical_root: iosxe.devices[]
+contract: lean iosxe.devices[].configuration.*
+epic_ref: TG-131
+module: netascode/nac-iosxe/iosxe 0.1.0
+provider: CiscoDevNet/iosxe 0.15.0
+generator: topogen
+mode: flat
+template: iosv
+device_template: iosv
+device_count: 2
+generated_artifacts:
+- nac.yaml
+- main.tf
+- versions.tf
+- terraform.tfvars.example
+- .gitignore
+- inventory.yaml
+- ansible.cfg
+- group_vars/all.yaml
+- host_vars/iosv-01.yaml
+- host_vars/iosv-02.yaml
+- verify_reachability.yaml
+- devices.yaml
+- nac_metadata.yaml

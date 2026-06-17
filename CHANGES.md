@@ -1,6 +1,420 @@
+<!--
+File Chain (see DEVELOPER.md):
+Doc Version: v1.3.20
+Date Modified: 2026-06-13
+
+- Called by: Users checking release notes, package managers, documentation generators
+- Reads from: Developer commits, PR descriptions, completed TODO items
+- Writes to: None (documentation only, but informs release notes and versioning)
+- Calls into: None (changelog-only)
+
+Purpose: Changelog documenting all user-facing changes, features, and bug fixes.
+         Follows conventional commit style (feat, fix, docs, refactor).
+         Used for release notes and version history.
+
+Blast Radius: None (documentation only, but critical for communicating changes to users)
+-->
+
 # Changes
 
-This file lists changes.
+This file lists changes. Format for Unreleased entries (files changed + rev): see [DEVELOPER.md Feature closeout checklist](DEVELOPER.md#feature-closeout-checklist).
+
+- Unreleased
+  - feat(mgmt): static IPv6 OOB from explicit `/64` anchor with FF10 embedding (TG-195)
+    - `--mgmt-ipv6-static` + required `--mgmt-ipv6-cidr /64` render deterministic global `ipv6 address` on IOSv/CSR OOB (routers only). Optional `--mgmt-ipv6-static-link-local` adds loopback-derived `fe80::FF10:…` on OOB. Routers are IPv6 hosts only — no `ipv6 unicast-routing` in static mode (routing deferred). NaC `ansible_host` populated at generate time; `sync-nac-mgmt.py` skips live poll when `mgmt_ipv6_mode: static`. Examples use `fd80::/64` or `2001:db8:1:2::/64` only.
+    - Files: src/topogen/mgmt_addressing.py (rev v1.0.1), src/topogen/main.py, src/topogen/render.py, src/topogen/models.py, src/topogen/nac.py, src/topogen/nac_mgmt_sync.py, src/topogen/templates/_static_link_local.jinja2 (rev v1.0.0), src/topogen/templates/_iosv_mgmt_oob.jinja2, src/topogen/templates/_csr_mgmt_oob.jinja2, tests/test_mgmt_addressing.py (rev v1.0.0), tests/test_mgmt_ipv6_vrf.py, tests/test_nac_cli_guardrails.py, tests/test_nac_writer.py, docs/TG-195-ai-prompt.md, DEVELOPER.md, README.md, TODO.md, CHANGES.md
+  - feat(cli): add `--cml-server` convenience flag for CML controller → lab YAML schema (TG-194)
+    - Operator-facing `--cml-server MAJOR.MINOR` sets `cml_version` when `--cml-version` is not passed explicitly; explicit `--cml-version` always wins for emitted YAML and feature gates (`--staging`, `smart_annotations`, etc.). Known map: 2.5→0.2.0, 2.6→0.2.1, 2.7→0.2.2, 2.8/2.9→0.3.0, 2.10→0.3.1. Unknown future servers use highest known schema with INFO log; gaps use nearest-lower mapped server. Provenance records both flags when present. Staging guard messages reference CML 2.10. `validate-tg165.ps1` adds `--cml-server 2.10` PKI staging gate.
+    - Files: src/topogen/cml_server.py (rev v1.0.0), src/topogen/main.py (rev v1.11.1), src/topogen/render.py (rev v1.4.1), tests/test_cml_server.py (rev v1.2.0), scripts/validate-tg165.ps1, DEVELOPER.md (rev v1.9.6), README.md (rev v1.8.11), TODO.md (rev v1.6.57), CHANGES.md (rev v1.3.19)
+  - feat(mgmt): OOB IPv6 CP2 — split addressing flags, dual-stack sync, live CSR matrix (TG-190)
+    - Split `--mgmt-ipv4-dhcp`, `--mgmt-ipv6-dhcp`, and `--mgmt-ipv6-slaac` (legacy `--mgmt-ipv6-mode` retained). Shared OOB partials `_iosv_mgmt_oob.jinja2` / `_csr_mgmt_oob.jinja2`; CSR IPv6-only uses `no ip address` + `ipv6 address dhcp`. `nac_mgmt_sync.py` records dual-stack IPv4+IPv6 in `mgmt_sync.json` and `devices.yaml`. CML console SSH fallback for CI alias push (`cml_console_cli.py`). Validation: `scripts/run-csr-ipv6-matrix.ps1`, `scripts/validate_csr_oob_live.py`; IOSv ProveCycle + CSR 6/6 flat/bootstrap live OOB PASS on external bridge. Evidence: `artifacts/pipeline-proof/TG-190/`. Merged via PR #28 (`6fcee1b`).
+    - Files: src/topogen/main.py (rev v1.10.0), src/topogen/render.py (rev v1.4.0), src/topogen/nac.py (rev v1.11.0), src/topogen/nac_mgmt_sync.py (rev v1.1.0), src/topogen/cml_ci_finalize.py (rev v1.1.0), src/topogen/cml_lab_evidence.py (rev v1.1.0), src/topogen/cml_console_cli.py (rev v1.0.0), src/topogen/templates/_csr_mgmt_oob.jinja2 (rev v1.0.0), src/topogen/templates/_iosv_mgmt_oob.jinja2 (rev v1.0.0), src/topogen/templates/iosv.jinja2 (rev v1.1.5), src/topogen/templates/iosv-eigrp.jinja2 (rev v1.1.3), src/topogen/templates/iosv-eigrp-nonflat.jinja2 (rev v1.1.5), src/topogen/templates/iosv-eigrp-stub.jinja2 (rev v1.1.5), src/topogen/templates/iosv-dmvpn.jinja2 (rev v1.2.2), src/topogen/templates/csr1000v.jinja2 (rev v1.0.2), src/topogen/templates/csr-dmvpn.jinja2 (rev v1.4.2), src/topogen/templates/csr-eigrp.jinja2 (rev v1.3.2), src/topogen/templates/csr-getvpn-ks.jinja2 (rev v1.0.3), src/topogen/templates/csr-ospf.jinja2 (rev v1.3.2), src/topogen/templates/csr-pki-ca.jinja2 (rev v1.3.6), scripts/run-csr-ipv6-matrix.ps1 (rev v1.0.0), scripts/validate_csr_oob_live.py (rev v1.0.0), scripts/validate-tg192-pipeline.ps1 (rev v1.1.0), tests/test_mgmt_ipv6_vrf.py (rev v1.1.0), tests/test_sync_nac_mgmt_ipv6_slaac.py (rev v1.1.0), tests/test_cml_ci_finalize.py (rev v1.0.0), tests/test_cml_lab_evidence.py (rev v1.0.0), tests/test_nac_cli_guardrails.py (rev v1.7.1), tests/test_nac_writer.py (rev v1.17.1), docs/TG-190-validation-ai-prompt.md (rev v1.0.0), artifacts/pipeline-proof/TG-190/* (rev v1.0.0), DEVELOPER.md (rev v1.9.5), README.md (rev v1.8.10), TODO.md (rev v1.6.56), CHANGES.md (rev v1.3.17)
+  - feat(cicd): CML CI/CD pipeline + per-ticket scoped CML users (TG-192)
+    - `topogen provision-cml-user` creates lab-scoped users (`admin: false`, `lab_view`+`lab_exec`) via `virl2_client`; `--revoke` for teardown. `capture-lab-evidence` / `finalize-ci-lab` embed CI report in lab notes plus visible (status-colored) and hidden canvas annotations. DEVELOPER.md runbook documents service vs customer credential tiers, full Jira→READY pipeline, and env vars. GitHub Actions skeleton `.github/workflows/cml-nac-pipeline.yml` (offline gates always; live apply behind `workflow_dispatch`). `scripts/validate-tg192-pipeline.ps1` offline + optional live gates using emitted `nac/sync-nac-mgmt.py`. `scripts/jira-cml-webhook.py` bridges Jira webhooks to `repository_dispatch` and READY comments. `validate-tg162-dmvpn-live.ps1` prefers emitted sync script when present. IPv6 SLAAC mgmt hosts bracketed in `nac.yaml`.
+    - Files: src/topogen/cml_user.py, src/topogen/cml_lab_evidence.py, src/topogen/cml_ci_finalize.py, src/topogen/main.py, src/topogen/nac_mgmt_sync.py, tests/test_cml_user_provision.py, tests/test_cml_lab_evidence.py, tests/test_cml_ci_finalize.py, scripts/validate-tg192-pipeline.ps1, scripts/jira-cml-webhook.py, .github/workflows/cml-nac-pipeline.yml, scripts/validate-tg162-dmvpn-live.ps1, DEVELOPER.md, TODO.md, CHANGES.md
+  - feat(nac): emit mgmt sync scaffold with `--nac` (TG-191)
+    - Every `--nac` tree includes `nac/sync-nac-mgmt.py` (unified DHCP/SLAAC/auto modes), `NAC-WORKFLOW.md`, and `mgmt_sync.json` report schema. IPv6 SLAAC labs also get `ssh-fanout.py` and `router-hosts.csv`. Consolidated sync logic in `src/topogen/nac_mgmt_sync.py`; `scripts/` wrappers re-export for backward compatibility. Optional `topogen sync-nac-mgmt` subcommand. `nac_metadata.yaml` gains `mgmt_mode`, `mgmt_vrf`, `mgmt_interface`, `mgmt_ipv6_mode`.
+    - Files: src/topogen/nac_mgmt_sync.py, src/topogen/nac.py, src/topogen/main.py, scripts/sync-nac-mgmt-dhcp.py, scripts/sync-nac-mgmt-ipv6-slaac.py, scripts/nac_mgmt_sync_lib.py, tests/test_sync_nac_mgmt_ipv6_slaac.py, tests/test_nac_writer.py, DEVELOPER.md, TODO.md, CHANGES.md
+  - feat(nac): OOB IPv6 mgmt in VRF with SLAAC sync (TG-190)
+    - `--mgmt-ipv6-mode slaac` renders OOB Gi with IPv6 autoconfig in mgmt VRF; `scripts/sync-nac-mgmt-ipv6-slaac.py` polls pyATS/CML snooping for global SLAAC addresses. Unit tests in `tests/test_sync_nac_mgmt_ipv6_slaac.py` and `tests/test_mgmt_ipv6_vrf.py`. Merged via PR #46.
+    - Files: src/topogen/main.py, src/topogen/render.py, scripts/sync-nac-mgmt-ipv6-slaac.py, scripts/nac_mgmt_sync_lib.py, scripts/ssh-fanout.py, tests/test_sync_nac_mgmt_ipv6_slaac.py, tests/test_mgmt_ipv6_vrf.py, docs/TG-190-checkpoint-1.md
+  - docs(developer): document `cml2/` vs `topogen --up` for NaC bootstrap at scale
+    - DEVELOPER.md adds a comparison table: prefer `cml2/` Terraform (`init` + `apply`, optional `plan`) for large labs and CI; use `topogen --up <yaml> [-i]` for quick one-off imports with no Terraform state. Notes mutual exclusion with `--terraform-cml2` at generation time.
+    - Files: DEVELOPER.md (rev v1.9.1 → v1.9.2), CHANGES.md (rev v1.3.13 → v1.3.14)
+  - chore(docs): remove internal validation pipeline runbooks from public repo
+    - Delete `docs/validation/TG-162-pipeline.md` and `docs/validation/TG-165-pipeline.md`; drop references from DEVELOPER.md, validation scripts, and `docs/nac/DMVPN-day0-nac-gap-audit.md`.
+    - Files: DEVELOPER.md, scripts/validate-tg162-dmvpn-live.ps1, scripts/validate-tg165.ps1, docs/nac/DMVPN-day0-nac-gap-audit.md, CHANGES.md
+  - feat(nac): add `--bootstrap` thin day-0 path for live NaC validation (TG-186)
+    - New `--bootstrap` flag (requires `--nac --mgmt`) emits thin CML router configs (hostname, OOB Gi DHCP, SSH, RESTCONF/NETCONF) while full routing/interfaces/CDP stay in `nac.yaml` for Terraform. Rejects `--blank`, `--pki`, `--getvpn`. Provenance includes `--bootstrap` via `_append_common_offline_args_bits()`. `scripts/sync-nac-mgmt-dhcp.py` falls back to CML interface snooping when local pyATS is unavailable. Live-validated on CML 2.10: `TG186-BOOTSTRAP-E2E` (2× CSR1000v), cml2 apply + NaC apply (11 resources), OSPF FULL neighbor.
+    - Files: src/topogen/main.py, src/topogen/render.py, src/topogen/nac.py, scripts/sync-nac-mgmt-dhcp.py, tests/test_nac_cli_guardrails.py, tests/test_nac_render_e2e.py, tests/test_nac_writer.py, tests/fixtures/nac/golden-flat-*/nac.yaml, DEVELOPER.md (rev v1.8.9 → v1.9.0), README.md (rev v1.8.6 → v1.8.7), CHANGES.md (rev v1.3.12 → v1.3.13)
+  - feat(nac): expand DMVPN NaC projection for nac-iosxe-supported tunnel/crypto attrs (TG-162)
+    - Project `tunnel_source`, `ipv4.redirects: false`, front-side/overlay VRF forwarding, IKEv2-PSK crypto stack, and `tunnel_protection_ipsec_profile` into `nac.yaml` when DMVPN labs use `--nac`. Document NHRP, mGRE mode, tunnel key, and EIGRP as out-of-scope for `netascode/nac-iosxe` 0.1.0 in DEVELOPER.md coverage matrix. Extend terraform plan harness with DMVPN resource assertions and a ninth IKEv2-PSK case. Add `scripts/validate-tg162-dmvpn-live.ps1` and CSR/IOSv mgmt interface support in `scripts/sync-nac-mgmt-dhcp.py`. Live-validated on CML 2.10: `DMVPN-N4-H1-CSR` (4× CSR1000v) NaC apply 16/16; R1 `tunnel source GigabitEthernet1`, `no ip redirects`.
+    - Files: src/topogen/nac.py (rev v1.9.1 → v1.10.0), tests/test_nac_writer.py (rev v1.16.0 → v1.17.0), tests/test_nac_terraform_plan.py (rev v1.0.0 → v1.1.0), scripts/sync-nac-mgmt-dhcp.py, scripts/validate-tg162-dmvpn-live.ps1 (rev v1.0.0), DEVELOPER.md, TODO.md, CHANGES.md (rev v1.3.12 → v1.3.13)
+  - feat(ci): add terraform plan contract test for NaC output (TG-161)
+    - Opt-in pytest matrix (`tests/test_nac_terraform_plan.py`, `-m terraform` / `TOPOGEN_TERRAFORM_PLAN=1`) generates eight offline labs (flat, flat-pair, DMVPN flat/flat-pair × IOSv/CSR) and runs `terraform init` + `terraform plan -input=false` with dummy IOSXE env vars. CI job `NaC Terraform plan contract` runs on NaC-related path changes with warmed `TF_PLUGIN_CACHE_DIR`. Documents short-path Windows workaround in DEVELOPER.md.
+    - Files: tests/test_nac_terraform_plan.py (rev v1.0.0), tests/conftest.py (rev v1.0.0), .github/workflows/python-package.yml, pyproject.toml (rev v1.0.3 → v1.0.4), DEVELOPER.md (rev v1.8.8 → v1.8.9), TODO.md, CHANGES.md (rev v1.3.11 → v1.3.12)
+  - fix(templates): CSR/IOSv day-0 Gi numbering uses topo `iface.slot` on nx high-degree nodes (TG-169)
+    - CSR data-plane stanzas and EEM noshut loops emit `GigabitEthernet{{ iface.slot + 1 }}` instead of `loop.index0 + 1`, so reserved OOB Gi5 is not reused for mesh links after slot skip. IOSv templates use `GigabitEthernet0/{{ iface.slot }}`. Fixes CDP-up/OSPF-down and Terraform Gi7 overlap on busy routers; NaC model unchanged.
+    - Files: src/topogen/templates/csr-ospf.jinja2 (rev v1.3.0 → v1.3.1), csr-eigrp.jinja2 (v1.3.0 → v1.3.1), csr1000v.jinja2 (v1.0.0 → v1.0.1), csr-getvpn-ks.jinja2 (v1.0.1 → v1.0.2), csr-pki-ca.jinja2 (v1.3.4 → v1.3.5), iosv.jinja2 (v1.1.3 → v1.1.4), iosv-eigrp.jinja2 (v1.1.1 → v1.1.2), iosv-eigrp-nonflat.jinja2 (v1.1.3 → v1.1.4), iosv-eigrp-stub.jinja2 (v1.1.3 → v1.1.4), tests/test_nac_writer.py (v1.15.0 → v1.16.0), CHANGES.md (v1.3.10 → v1.3.11)
+  - fix(nac): `--nac --mgmt` mgmt-bridge DHCP OOB deployable via Terraform (TG-146)
+    - Exclude OOB Gi5 from Terraform-managed `ethernets`; `host` is connection target only (no fake `10.254.0.x` static). CSR/IOSv templates skip mgmt slot in data-plane loops and use `slot + 1` for day-0 Gi numbering. Added `scripts/sync-nac-mgmt-dhcp.py`, `scripts/nac-minimal-from-live.py`, and regression tests. Live-validated on CML 2.10: N45 full apply/destroy (Gi5 DHCP preserved), N48 48-node DHCP sync + NETCONF via real mgmt IPs.
+    - Files: src/topogen/nac.py, src/topogen/render.py, src/topogen/templates/csr-*.jinja2, src/topogen/templates/iosv*.jinja2, scripts/sync-nac-mgmt-dhcp.py (rev v1.0.0), scripts/nac-minimal-from-live.py (rev v1.0.0), tests/test_nac_writer.py, CHANGES.md (rev v1.3.9 → v1.3.10)
+  - docs(version): sync package v0.3.0 in README provenance example and DEVELOPER version guidance (TG-168)
+    - README intent-metadata example updated from `v0.2.5` to `v0.3.0`; DEVELOPER clarifies package version vs `--cml-version`; TODO bump task note updated for TG-147 release.
+    - Files: README.md (rev v1.8.5 → v1.8.6), DEVELOPER.md (rev v1.8.7 → v1.8.8), TODO.md (rev v1.6.48 → v1.6.49), CHANGES.md (rev v1.3.8 → v1.3.9)
+
+- version 0.3.0
+  - release(epic): close TG-147 Universal NaC Offline Support With DMVPN — merge `epic/TG-147-universal-nac-dmvpn` to `main` (topogen v0.3.0); post-epic follow-ups TG-161 (terraform plan CI gate), TG-162 (DMVPN NaC fidelity vs day-0 config)
+    - Files: pyproject.toml (rev v1.0.2 → v1.0.3), CHANGES.md (rev v1.3.7 → v1.3.8)
+  - fix(cml): INTENT-SPOT marker uses unmanaged_switch (no router license) (TG-167)
+    - `--intent-spot` QA node changed from iosv router to `unmanaged_switch` (offline YAML and online create).
+    - Files: src/topogen/render.py (rev v1.3.6 → v1.3.7), src/topogen/main.py (rev v1.9.1 → v1.9.2), tests/test_intent_annotation.py (rev v1.1.0 → v1.1.1), CHANGES.md (rev v1.3.6 → v1.3.7)
+  - docs(TG-167): README intent/metadata, DEVELOPER TG-167 closeout, TODO online parity done
+    - Files: README.md (rev v1.8.4 → v1.8.5), DEVELOPER.md (rev v1.8.6 → v1.8.7), TODO.md (rev v1.6.47 → v1.6.48), CHANGES.md (rev v1.3.6 → v1.3.7)
+  - feat(cml): online intent metadata parity with offline YAML (TG-167)
+    - After topology build, online create sets `lab.description`, hidden `lab.notes`, and a white 1pt text annotation at scaled down-only coordinates via `virl2_client`. Optional `--intent-spot` adds the INTENT-SPOT iosv marker node (same as offline). Applied in all online render paths before `--yaml` export or lab start. Live-validated on CML 2.10 (simple, flat, nx, dmvpn).
+    - Files: src/topogen/render.py (rev v1.3.5 → v1.3.6), src/topogen/main.py (rev v1.9.0 → v1.9.1), tests/test_intent_annotation.py (rev v1.0.0 → v1.1.0), scripts/validate-intent-spot-matrix.py (rev v1.0.0), scripts/validate-intent-spot-matrix.ps1 (rev v1.0.0), CHANGES.md (rev v1.3.5 → v1.3.6)
+  - fix(nx): reserve `--mgmt-slot` when assigning offline nx mesh interfaces (TG-167)
+    - Offline `offline_nx_yaml()` numbered mesh interfaces 0, 1, 2, … and also placed OOB mgmt on the default `--mgmt-slot 5` (`GigabitEthernet0/5`), double-booking slot 5 on high-degree routers and causing CML import failures at scale. Online nx avoids this because CML auto-assigns data links after mgmt is created on slot 5.
+    - Mesh slot assignment now skips the reserved mgmt slot (CSR: `mgmt_slot - 1`), matching online behavior. `--mgmt-slot 5` unchanged; busy routers use e.g. `Gi0/6` for an extra mesh link while `Gi0/5` stays OOB. NaC and CML2 consume the corrected `TopogenNode` / YAML paths; no `nac.py` or `cml2.py` changes.
+    - Live-validated: `nx` 200 IOSv with `--mgmt --mgmt-bridge --nac --cml2` imports and starts on CML 2.10.
+    - Files: src/topogen/render.py (rev v1.3.3 → v1.3.4), CHANGES.md (rev v1.3.4 → v1.3.5)
+  - fix(cml): place offline intent metadata below topology for Workbench zoom (TG-167)
+    - Hidden intent annotation moved from off-canvas `x=-9999, y=-9999` to down-only scaled coordinates `(max(node x), max(node y) + 1500)` so CML Fit/zoom stays on the real lab. Keeps all three metadata copies: `lab.description`, hidden `lab.notes`, and white 1pt canvas annotation.
+    - Adds `_scaled_intent_annotation_xy()`, `_finalize_offline_yaml_with_intent()`, opt-in `--intent-spot` QA marker router, and `tests/test_intent_annotation.py`.
+    - Files: src/topogen/render.py (rev v1.3.2 → v1.3.3), tests/test_intent_annotation.py (rev v1.0.0), TODO.md, CHANGES.md (rev v1.3.4 → v1.3.5)
+  - feat(staging): auto-enable node staging when `--pki` is used (TG-165)
+    - PKI labs need CA-ROOT online before enrolling routers. Staging and the CA-ROOT priority ladder already existed but required a separate `--staging` flag. With `--pki`, TopoGen now sets staging on by default (CA-ROOT priority 900) unless `--no-staging` is passed — the first behavior that auto-enables without a dedicated enable flag, though still effectively opt-in because it only applies when `--pki` is set and staging is emitted only with `--cml-version 0.3.1` (CML 2.10); default schema `0.3.0` logs a warning and omits `node_staging`.
+    - Added `resolve_staging_flags()` in `main.py`, `--no-staging` opt-out, `tests/test_staging_pki.py`, and offline gate script `scripts/validate-tg165.ps1`. Live-validated on CML 2.10 (TG-166).
+    - Files: src/topogen/main.py (rev v1.8.0 → v1.9.0), tests/test_staging_pki.py (rev v1.0.0), README.md (rev v1.8.3 → v1.8.4), DEVELOPER.md (rev v1.8.4 → v1.8.6), CHANGES.md (rev v1.3.3 → v1.3.4)
+  - docs(nac,cml2): universal offline NaC, DMVPN NaC examples, CML2 Terraform workflow (TG-154)
+    - README no longer documents `--nac` as limited to fixed MVP command shapes; describes all offline modes, DMVPN `--nac` examples, and `terraform init` / `plan` / `apply` for both `nac/` and `cml2/` workspaces
+    - DEVELOPER.md updates NaC/CML2 file chains, guardrail split (CLI vs render), and test tables for universal + DMVPN paths
+    - Files: README.md (rev v1.8.2 → v1.8.3), DEVELOPER.md (rev v1.8.2 → v1.8.3), CHANGES.md (rev v1.3.2 → v1.3.3)
+  - feat(nac): generate DMVPN flat-pair offline NaC artifacts (TG-151)
+    - DMVPN flat and flat-pair offline YAML generation now share the NaC validation/write helper and emit the full sibling `nac/` output tree when `--nac` is set.
+    - Added regression coverage for deterministic DMVPN flat-pair device/interface naming, full NaC artifact tree generation, RESTCONF/NETCONF day0 enablement, credential-free Terraform provider scaffolding, and unchanged flat-pair CML YAML path/config when `--nac` is omitted.
+    - Files: src/topogen/render.py (rev v1.3.1 → v1.3.2), tests/test_nac_writer.py (rev v1.14.0 → v1.14.1), README.md (rev v1.8.1 → v1.8.2), DEVELOPER.md (rev v1.8.1 → v1.8.2), TODO.md (rev v1.6.46 → v1.6.47), CHANGES.md (rev v1.3.1 → v1.3.2)
+  - feat(cml2): add Terraform lifecycle scaffold for generated offline labs (TG-150)
+    - Added `--terraform-cml2` for offline generation, emitting `out/<lab>/cml2/` alongside the generated CML YAML so users can run `terraform init` and `terraform apply` against the `CiscoDevNet/cml2` provider. `--cml2` remains available as a short compatibility alias.
+    - The scaffold writes `main.tf`, `versions.tf`, `variables.tf`, `outputs.tf`, and `.gitignore`; `main.tf` points to the generated YAML through `file(var.topology_file)`, with `variables.tf` defaulting to a relative `../<lab>.yaml` path.
+    - CML connection values are Terraform inputs only; no controller URLs, credentials, tokens, passwords, or machine-local paths are hardcoded. `--terraform-cml2` and `--nac` remain separate sibling workspaces when both are enabled.
+    - Files: src/topogen/main.py (rev v1.6.1 → v1.8.0), src/topogen/render.py (rev v1.2.15 → v1.3.1), src/topogen/cml2.py (rev v1.0.0 → v1.0.1), tests/test_cml2_lifecycle.py (rev v1.0.0 → v1.1.0), tests/test_nac_cli_guardrails.py (rev v1.4.0 → v1.6.0), tests/test_nac_output_paths.py (rev v1.1.0 → v1.2.0), README.md (rev v1.7.0 → v1.8.1), DEVELOPER.md (rev v1.7.17 → v1.8.1), TODO.md (rev v1.6.44 → v1.6.46), CHANGES.md (rev v1.2.38 → v1.3.1)
+  - fix(nac): drive the Terraform module via `yaml_files = ["nac.yaml"]` (TG-145)
+    - The generated `main.tf` used `yaml_directories = ["."]`, which made the `netascode/nac-iosxe` module recursively ingest every `*.yaml` under `nac/` (Ansible/informational files, and even the module's own examples under `.terraform/`). The Ansible playbook `verify_reachability.yaml` is a top-level sequence, so `terraform plan` failed in the module's `yaml_merge` (`cannot unmarshal !!seq into map`). `terraform validate` masked it because it never reads the YAML.
+    - Switched the scaffold to the module's `yaml_files = ["nac.yaml"]` input so only the NaC model is ingested; corrected the `terraform.tfvars.example` comment and the `devices.yaml`/`nac_metadata.yaml` informational note.
+    - Proven on a fresh generation: `terraform init`/`validate` pass and `terraform plan` => `Plan: 6 to add` (iosxe_system + interface_ethernet + interface_loopback for both routers).
+    - Files: src/topogen/nac.py (rev v1.8.0 → v1.9.0), tests/test_nac_writer.py (rev v1.10.0 → v1.11.0), tests/fixtures/nac/golden-flat-{no-mgmt,mgmt}/ (regenerated), docs/nac/schema-verification.md (rev v1.0.0 → v1.1.0), CHANGES.md (rev v1.2.37 → v1.2.38)
+  - feat(nac): deployable NaC MVP — Terraform workspace + Ansible stub + day0 RESTCONF/NETCONF (TG-131)
+    - `--nac` now emits a deployable Network-as-Code workspace alongside the offline CML YAML: a lean `nac.yaml` targeting the official `netascode/nac-iosxe/iosxe` 0.1.0 module (schema `iosxe.devices[].configuration.*`), a pinned Terraform scaffold (`main.tf`, `versions.tf`, `terraform.tfvars.example`, `.gitignore`), and a read-only Ansible reachability stub (`ansible.cfg`, `inventory.yaml`, `group_vars/all.yaml`, `host_vars/*.yaml`, `verify_reachability.yaml`)
+    - Provider pinned to `CiscoDevNet/iosxe` 0.15.0 (transitive `netascode/utils` 1.1.0-beta3), Terraform `>= 1.8.0`; provider `insecure = true` is lab-only; credentials are read from environment variables (no secrets written)
+    - RESTCONF/NETCONF enablement (`ip http secure-server`, `restconf`, `netconf-yang`) spliced into router day0 configs when `--nac` is set
+    - Removed `terraform.tfvars.json` emission (Terraform auto-loads that name; it cannot be labeled "not an input"); `devices.yaml` and `nac_metadata.yaml` are now explicitly informational (not Terraform inputs)
+    - Guardrails: `--nac` requires `--offline-yaml`; supported shapes are 1x simple and 2x simple/nx/flat/flat-pair on `iosv`/`csr1000v`; unsupported combinations fail fast
+    - Added offline smoke tests + two committed golden fixtures (`tests/fixtures/nac/golden-flat-{no-mgmt,mgmt}`) that regenerate through the real CLI and assert byte-identical output
+    - Docs (TG-S13 closeout): refreshed the README `--help` block and NaC scope section, updated the DEVELOPER.md NaC reference, and marked the one-router golden contract as superseded
+    - Files: README.md (rev v1.6.0 → v1.7.0), DEVELOPER.md (rev v1.7.16 → v1.7.17), docs/nac/iosxe-one-router-golden-contract.md (rev v1.1.0 → v1.2.0), CHANGES.md (rev v1.2.36 → v1.2.37), TODO.md (rev v1.6.43 → v1.6.44)
+  - feat(dmvpn): add `--dmvpn-ipsec-mode` flag for transport/tunnel mode selection (TG-110)
+    - Adds `--dmvpn-ipsec-mode {transport,tunnel}` CLI flag (default: transport) to control the IPsec transform-set mode in DMVPN configurations
+    - Previously `mode transport` was hardcoded; some Cisco reference designs use `mode tunnel`
+    - Existing labs are unchanged (transport is the default)
+    - Files: src/topogen/main.py (rev v1.3.7 → v1.3.8), src/topogen/render.py (rev v1.2.4 → v1.2.5), src/topogen/templates/csr-dmvpn.jinja2 (rev v1.4.0 → v1.4.1), src/topogen/templates/iosv-dmvpn.jinja2 (rev v1.2.0 → v1.2.1), README.md (rev v1.5.6 → v1.5.7), CHANGES.md (rev v1.2.34 → v1.2.35), TODO.md (rev v1.6.41 → v1.6.42)
+  - docs(nac): document NaC MVP command scope, guardrails, and output tree (TG-125)
+    - Added dedicated README section for `--nac` MVP supported shapes: 1x simple, 2x simple/nx/flat/flat-pair
+    - Documented platform guardrail (`iosv`, `csr1000v`) and deterministic output layout under `out/<lab>/nac/`
+    - Updated TODO recent completions to reflect NaC MVP baseline delivery and status reconciliation
+    - Files: README.md (rev v1.5.9 → v1.6.0), TODO.md (rev v1.6.42 → v1.6.43), CHANGES.md (rev v1.2.35 → v1.2.36)
+  - feat(pki): add `checkcert` alias to PKI client routers (TG-106)
+    - Adds `alias exec checkcert show crypto pki certificates CA-ROOT-SELF` to all PKI client routers so operators can quickly verify certificate enrollment status
+    - Mirrors the CA-ROOT `servcerts` alias pattern; injected via `_inject_pki_client_trustpoint()` alongside the existing `authc` alias
+    - Files: src/topogen/render.py (rev v1.2.3 → v1.2.4), CHANGES.md (rev v1.2.33 → v1.2.34), TODO.md (rev v1.6.39 → v1.6.40)
+  - fix(pki): fix CA-ROOT boot order — CA server now starts before auto-enroll (TG-60)
+    - Regression: `csr-pki-ca.jinja2` (online template) had `crypto pki trustpoint CA-ROOT-SELF` with `auto-enroll 70 regenerate` placed BEFORE `crypto pki server CA-ROOT / no shutdown`; CVAC applied config sequentially so auto-enroll fired before the CA server was running
+    - Fix: reordered template to match offline assembly path — CA server starts first, then clock set (backdated 1 day), then key generation, then trustpoint with auto-enroll
+    - Added `CA-ROOT-AUTHENTICATE` EEM applet to online template (triggers on `"Certificate server now enabled"` syslog, authenticates CA-ROOT-SELF trustpoint); matches offline path's `_pki_ca_authenticate_eem_lines()`
+    - Added `pki_clock_set` and `archive` context variables to online render path
+    - Files: src/topogen/templates/csr-pki-ca.jinja2 (rev v1.3.3 → v1.3.4), src/topogen/render.py (rev v1.2.2 → v1.2.3), CHANGES.md (rev v1.2.32 → v1.2.33), TODO.md (rev v1.6.37 → v1.6.39)
+  - feat(oob): two-tier OOB management for all online modes matching offline reference
+    - Online `render_node_network` (NX), `render_node_sequence` (simple), and `render_flat_network` (flat) now create a two-tier OOB switch fabric: SWoob0 (aggregation) + SWoob1..N (access, one per `--flat-group-size` routers, default 20)
+    - Previously, these online modes used a single SWoob0 switch which cannot scale beyond ~48 routers
+    - ext-conn-mgmt links to SWoob0 (when `--mgmt-bridge`); each SWoobN uplinks to SWoob0; routers connect to their group's access switch via `idx // oob_group`
+    - Matches the offline YAML generators which already used this design
+    - CA-ROOT and KS (GET VPN key server) nodes in flat mode now connect to SWoob1 instead of the old single switch
+    - Files: src/topogen/render.py (rev v1.1.9 → v1.2.0), CHANGES.md (rev v1.2.31 → v1.2.32), DEVELOPER.md (rev v1.7.13 → v1.7.14)
+  - fix(templates): add OOB management VRF block to 4 templates that were missing it
+    - `iosv.jinja2`, `iosv-eigrp-nonflat.jinja2`, `iosv-eigrp-stub.jinja2`, `iol-xe.jinja2` now emit `ip vrf <vrf>`, management interface with VRF forwarding + DHCP, and VRF default route when `--mgmt` is used
+    - Previously, these templates had no `mgmt` block, so the management interface was created and linked but never configured in the router startup config
+    - Files: src/topogen/templates/iosv.jinja2 (rev v1.1.2 → v1.1.3), src/topogen/templates/iosv-eigrp-nonflat.jinja2 (rev v1.1.2 → v1.1.3), src/topogen/templates/iosv-eigrp-stub.jinja2 (rev v1.1.2 → v1.1.3), src/topogen/templates/iol-xe.jinja2 (rev v1.1.2 → v1.1.3)
+  - fix(nx,simple): offline NX and simple modes now generate correct topologies matching online
+    - Previously, `--mode nx --offline-yaml` and `--mode simple --offline-yaml` silently fell through to `offline_flat_yaml()` and produced a flat switch-fabric topology identical to flat mode
+    - NX mode: new `offline_nx_yaml()` uses `networkx.random_shell_graph` + `kamada_kawai_layout` to produce a partially-meshed random graph with direct router-to-router p2p links (no data-plane switches); coordinates auto-scaled to CML's 15000-coordinate limit
+    - Simple mode: new `offline_simple_yaml()` produces a sequential chain (R1-R2-R3-...-Rn) with square spiral coordinates matching the online `render_node_sequence` layout; slot 0 = forward link, slot 1 = backward link
+    - Both now include ext-conn-0 (external_connector) and dns-host (Alpine Linux DNS/NAT gateway) exactly mirroring their online counterparts (`render_node_network` and `render_node_sequence`)
+    - dns-host eth0 links to ext-conn-0; eth1 links to the core router (NX: highest degree centrality, simple: R1)
+    - Core/R1 gets `ip route 0.0.0.0 0.0.0.0 <dns-host-ip>` and OSPF `default-information originate`
+    - dns-host boot script: dnsmasq for DNS, iptables NAT for internet, static routes to loopback/p2p nets, /etc/hosts for all lab routers
+    - Both use direct router-to-router p2p /30 links from cfg.p2pnets and /32 loopbacks from cfg.loopbacks (no data-plane switches)
+    - Online paths remain unchanged
+    - Supports: `--mgmt`, `--mgmt-bridge`, `--blank`, `--staging`, `--ntp`, `--archive`, `--cml-version`
+    - main.py offline dispatch: `elif args.mode == "nx":` → `offline_nx_yaml()`, `elif args.mode == "simple":` → `offline_simple_yaml()`
+    - Files: src/topogen/main.py (rev v1.3.5 → v1.3.7), src/topogen/render.py (rev v1.1.6 → v1.1.9), CHANGES.md (rev v1.2.28 → v1.2.31), TODO.md (rev v1.6.34 → v1.6.35)
+  - feat(blank): add `--blank` flag for topology-only labs (CML Bootstrap Lab)
+    - When `--blank` is set, all router nodes emit empty configuration instead of full startup configs
+    - Works for both offline YAML generation and online lab creation via the CML API
+    - Topology (nodes, links, switches, coordinates) is generated normally; only device configuration is omitted
+    - Enables CML's "Bootstrap Lab" feature to generate stub configs after import
+    - Supported modes: simple, nx, flat, flat-pair (not DMVPN)
+    - Cannot be combined with `--pki`, `--getvpn`, or DMVPN mode (Bootstrap Lab cannot generate those configs)
+    - Config-only flags are also rejected: `--ntp`, `--ntp-vrf`, `--ntp-inband`, `--ntp-oob`, `--archive`, `--eigrp-stub`, `--vrf`, `--pair-vrf` (no configs are rendered)
+    - Topology flags (`--mgmt`, `--mgmt-bridge`, `--flat-group-size`, `--staging`, etc.) remain allowed
+    - Unmanaged switches and external connectors are not affected
+    - Files: src/topogen/main.py (rev v1.3.2 → v1.3.5), src/topogen/render.py (rev v1.1.4 → v1.1.6), CHANGES.md (rev v1.2.25 → v1.2.28), TODO.md (rev v1.6.30 → v1.6.34), README.md (rev v1.5.3 → v1.5.6)
+  - fix(ntp): add NTP support to 4 templates that were silently ignoring `--ntp`
+    - `iosv.jinja2`, `iosv-eigrp-stub.jinja2`, `iosv-eigrp-nonflat.jinja2`, `iol-xe.jinja2` now emit `ntp server` (with optional VRF and OOB NTP)
+    - Files: src/topogen/templates/iosv.jinja2 (rev v1.1.1 → v1.1.2), src/topogen/templates/iosv-eigrp-stub.jinja2 (rev v1.1.1 → v1.1.2), src/topogen/templates/iosv-eigrp-nonflat.jinja2 (rev v1.1.1 → v1.1.2), src/topogen/templates/iol-xe.jinja2 (rev v1.1.1 → v1.1.2), CHANGES.md (rev v1.2.24 → v1.2.25), TODO.md (rev v1.6.29 → v1.6.30)
+  - feat(staging): add `--staging` flag for CML 2.10 node staging (boot ordering)
+    - New CLI flag: `--staging` (requires `--cml-version >= 0.3.1`)
+    - Emits `lab.node_staging` block (`enabled: true`, `start_remaining: true`, `abort_on_failure: true`)
+    - Per-node `priority:` in offline YAML: ext-conn/OOB switches (1000), data switches (950), CA-ROOT (900), KS/hubs (800); regular routers get no priority (boot via "Start Remaining Nodes")
+    - Applied to all 4 offline renderers: flat, flat-pair, DMVPN flat, DMVPN flat-pair
+    - Files: src/topogen/main.py (rev v1.3.0 → v1.3.1), src/topogen/render.py (rev v1.1.2 → v1.1.4), CHANGES.md (rev v1.2.22 → v1.2.24), TODO.md (rev v1.6.28 → v1.6.29), README.md (rev v1.5.1 → v1.5.3)
+  - docs(readme): refresh `--help` output block to include GET VPN flags (`--getvpn`, `--getvpn-protocol`, `--getvpn-group-id`, `--getvpn-rekey-interval`)
+    - Files: README.md (rev v1.5.0 → v1.5.1), CHANGES.md (rev v1.2.21 → v1.2.22)
+  - fix(getvpn): correct KS IP calculation (broadcast - 4) and enable GM config on all flat-pair routers
+    - KS IP in flat and DMVPN-flat modes used `broadcast_address - 2` which collided with CA-ROOT addressing; fixed to `broadcast_address - 4`
+    - Flat-pair mode incorrectly applied GM config only to odd-numbered routers; now all routers receive GM config
+    - Files: src/topogen/render.py (rev v1.1.1 → v1.1.2), CHANGES.md (rev v1.2.20 → v1.2.21)
+  - feat(getvpn): add GET VPN (Group Encrypted Transport VPN) support with GDOI and G-IKEv2 protocols
+    - New CLI flags: `--getvpn` (enable), `--getvpn-protocol {gdoi,gikev2}` (default: gdoi), `--getvpn-group-id N` (default: 1), `--getvpn-rekey-interval N` (default: 86400)
+    - Key Server (KS) node: CSR1000v with `csr-getvpn-ks.jinja2` template; GDOI `server local` or G-IKEv2 `gikev2` profile; encryption ACL pushed to GMs
+    - Group Members (GMs): all routers get ISAKMP/IKEv2 config, group registration, and crypto map on WAN interface
+    - Requires `--pki` for PKI certificate authentication (KS and GMs enroll with CA-ROOT)
+    - Works with flat, flat-pair, and dmvpn modes (all 4 offline renderers updated)
+    - Files: src/topogen/main.py, src/topogen/render.py, src/topogen/templates/csr-getvpn-ks.jinja2, README.md, CHANGES.md, TODO.md
+  - docs(todo): add GET VPN (Group Encrypted Transport VPN) future idea
+    - Files: TODO.md (rev v1.6.26 → v1.6.27), CHANGES.md (rev v1.2.18 → v1.2.19)
+  - docs(schema): document confirmed CML 2.10 schema `0.3.1` findings — `lab.node_staging`, per-node `priority`, `pyats` block, named-file `configuration` format, per-link `conditioning`, autostart is server-side only; add staging and config format TODOs
+    - Files: DEVELOPER.md (rev v1.7.12 → v1.7.13), TODO.md (rev v1.6.25 → v1.6.26), README.md (rev v1.4.14 → v1.4.15), CHANGES.md (rev v1.2.17 → v1.2.18)
+
+- version 0.2.5
+  - fix(compat): omit `smart_annotations` from offline YAML when `--cml-version` is `<= 0.2.2` — fixes CML 2.7 import rejection (`Additional properties are not allowed ('smart_annotations' was unexpected)`)
+    - `_intent_annotation_lines()` now accepts `version` parameter; `smart_annotations: []` only emitted for schema `> 0.2.2`
+    - Added CML schema version mapping to DEVELOPER.md and README.md
+    - Updated `--cml-version` help string and README references to reflect validated CML 2.5/2.7 support
+    - Files: src/topogen/render.py (rev v1.0.17 → v1.0.18), src/topogen/main.py (rev v1.2.0 → v1.2.1), README.md (rev v1.4.12 → v1.4.14), DEVELOPER.md (rev v1.7.8 → v1.7.9), CHANGES.md (rev v1.2.13 → v1.2.15)
+  - feat(import): `--import-yaml` now reads `title:` from YAML when `-L` is not provided (PoLA — closes #36)
+    - Previously, importing always overwrote the lab title with `"topogen lab"` or the filename stem, discarding the `title:` set during generation
+    - Now: no `-L` on import → YAML's `title:` carries through; `-L` on import → explicit override
+    - Changed `-L` argparse default from `"topogen lab"` to `None`; smart-defaulting in `main()` sets context-appropriate defaults for offline-yaml and online paths
+    - Files: src/topogen/main.py (rev v1.1.4 → v1.2.0), src/topogen/render.py (rev v1.0.16 → v1.0.17), CHANGES.md (rev v1.2.12 → v1.2.13), TODO.md (rev v1.6.22 → v1.6.23)
+  - feat(pki): add `alias exec servcerts` to CA-ROOT — shortcut for `sh crypto pki server CA-ROOT cer` to inspect issued certificates
+    - Added to `csr-pki-ca.jinja2` (online path) and all four inline CA config assembly sites in `render.py` (offline DMVPN flat, DMVPN flat-pair, flat, flat-pair)
+    - Alias placed before EEM applets to avoid being swallowed by EEM `end` statements
+    - Files: csr-pki-ca.jinja2 (rev v1.3.0 → v1.3.1), src/topogen/render.py (rev v1.0.15 → v1.0.16), DEVELOPER.md (rev v1.7.6 → v1.7.7), CHANGES.md (rev v1.2.11 → v1.2.12), TODO.md (rev v1.6.20 → v1.6.21)
+  - fix(pki): backdate CA-ROOT clock by 1 day so CA certificate `notBefore` precedes client clocks — prevents `%PKI-3-CERTIFICATE_INVALID_NOT_YET_VALID` errors on node boot (closes #31)
+    - `_pki_clock_set_today()` now accepts `backdate_days` parameter; CA uses `backdate_days=1`, clients use default `0`
+    - Design supports future 3-level PKI hierarchy with tiered offsets (see DEVELOPER.md)
+    - Files: src/topogen/render.py (rev v1.0.14 → v1.0.15), DEVELOPER.md (rev v1.7.5 → v1.7.6), TODO.md (rev v1.6.19 → v1.6.20), CHANGES.md (rev v1.2.10 → v1.2.11), README.md (rev v1.4.9 → v1.4.10)
+  - docs(todo): add enhancement — `--import-yaml` should read `title:` from YAML when `-L` is not provided (PLA)
+  - docs(cleanup): remove stray merge conflict marker from CHANGES.md; clean up TODO.md — remove completed roadmap items (OOB mgmt, DMVPN IPsec PSK, DMVPN PKI, DMVPN Phase 3, DMVPN security roadmap, CSR EEM link-up superseded by TOPOGEN-NOSHUT), remove duplicate done items from Future ideas, move coordinate scaling bug to Done, remove placeholders
+    - Files: CHANGES.md (rev v1.2.9 → v1.2.10), TODO.md (rev v1.6.13 → v1.6.14)
+  - fix(csr): add TOPOGEN-NOSHUT EEM applet to all CSR1000v templates — works around CML bug where CSR interfaces enter `shutdown` after first boot or wipe despite `no shutdown` in startup config
+    - EEM fires unconditionally at `@reboot`, applies `no shutdown` to all configured physical and management interfaces
+    - Interface list is data-driven from the same `node.interfaces` + `mgmt` context the templates already use — no hardcoded interface range
+    - EEM applet placed after `line vty` / `line con` sections (IOS-XE requires event manager blocks last before `end`)
+    - Action labels kept within `.0`–`.9` to avoid EEM lexicographic sorting issues
+    - Templates: csr-dmvpn (rev v1.1.2 → v1.3.0), csr-eigrp (rev v1.1.1 → v1.3.0), csr-ospf (rev v1.1.1 → v1.3.0), csr-pki-ca (rev v1.1.1 → v1.3.0)
+    - Files: CHANGES.md (rev v1.2.7 → v1.2.9)
+  - docs(developer): add EEM placement and action label numbering rules
+    - EEM applets must appear after `line vty`/`line con` sections; action labels must stay within `.0`–`.9`
+    - Files: DEVELOPER.md
+  - docs(todo): add RESTCONF/NETCONF future feature for CSR1000v templates
+    - Files: TODO.md
+  - fix(flat): auto-scale x/y coordinates in `offline_flat_yaml` and `offline_flat_pair_yaml` so any node count and group size produces importable YAML without exceeding CML's 15000-coordinate limit
+    - Previously, switch x was computed as `(i+1) * distance * 3` with no upper bound; at 26 access switches (520 nodes, group=20) the last switch landed at x=15600 and CML rejected the import with a validation error
+    - Fix: compute `sw_step_x` and `router_step_y` scaled to `max_coord=15000` (same approach as the existing DMVPN renderer); all node placements are clamped with `min(max_coord, ...)`
+    - Users no longer need to manually tune `--flat-group-size` to avoid coordinate overflow; the layout adapts automatically
+    - Files: src/topogen/render.py (rev v1.0.13 → v1.0.14), CHANGES.md (rev v1.2.8 → v1.2.9), README.md (rev v1.4.8 → v1.4.9)
+  - docs(pki): add PKI.md — single reference for TopoGen PKI (flags, CA-ROOT, clients, EEM applets, known issues, auto-deploy certs, troubleshooting); add PKI.md to README documentation map
+    - Files: PKI.md (new, rev v1.0.0), README.md (rev v1.4.7 → v1.4.8), CHANGES.md (rev v1.2.7 → v1.2.8)
+  - feat(quiet): add `-q` / `--quiet` flag to suppress non-essential output
+    - When set, log level is forced to ERROR so only errors and final result are shown; useful for scripts and CI/CD
+    - Files: src/topogen/main.py (rev v1.1.3 → v1.1.4), CHANGES.md (rev v1.2.6 → v1.2.7), README.md (rev v1.4.5 → v1.4.6), DEVELOPER.md (rev v1.7.3 → v1.7.4), TODO.md (rev v1.6.3 → v1.6.4)
+  - fix(online): pass VIRL2_URL, VIRL2_USER, VIRL2_PASS explicitly into ClientLibrary
+    - TopoGen now reads env vars and passes url/username/password to virl2_client.ClientLibrary(); fixes "no env provided" when vars are set in PowerShell/shell before running topogen
+    - Files: src/topogen/render.py (rev v1.0.11 → v1.0.12), CHANGES.md (rev v1.2.5 → v1.2.6)
+  - feat(archive): add `--archive` flag and archive config block to all IOS/IOS-XE templates (feat/archive branch)
+    - CLI: `--archive` enables config archiving and rundiff alias on routers (opt-in)
+    - Enables: `archive` with `log config`, `path flash:`, `maximum 5`, `write-memory`; `alias exec rundiff` when `--archive` set; block omitted otherwise
+    - Templates: csr-dmvpn, csr-eigrp, csr-ospf, csr-pki-ca, iosv, iosv-dmvpn, iosv-eigrp, iosv-eigrp-stub, iosv-eigrp-nonflat, iol-xe; lxc (FRR) not applicable. Offline flat args_bits include `--pki` and `--archive` when set
+    - Files: src/topogen/main.py (rev v1.1.2 → v1.1.3), src/topogen/render.py (rev v1.0.11 → v1.0.12), src/topogen/templates/*.jinja2 (10 files), TODO.md (rev v1.6.2 → v1.6.3), README.md (rev v1.4.4 → v1.4.5), DEVELOPER.md (rev v1.7.2 → v1.7.3), CHANGES.md (rev v1.2.5 → v1.2.6)
+  - fix(dmvpn): OOB switch overflow in `offline_dmvpn_flat_pair_yaml` — `num_oob_sw` was set to `num_access` (NBMA switch count, based on odd routers only), but OOB connects ALL routers; with large labs (e.g. 200 nodes, group=20) each OOB access switch got 40 routers + 1 uplink = 41 ports, exceeding the CML `unmanaged_switch` 32-port cap; fix: `num_oob_sw = ceil(total_routers / oob_group)` so OOB switches are sized by total router count
+    - Files: src/topogen/render.py (rev v1.0.10 → v1.0.11), CHANGES.md (rev v1.2.4 → v1.2.5)
+  - fix(dmvpn): EEM CLIENT-PKI-SET-CLOCK and CLIENT-PKI-AUTHENTICATE timers increased from 90 s/95 s to 300 s/305 s to give CA-ROOT sufficient time to boot and start its PKI server before spoke enrollment attempts; if CA-ROOT is not reachable when the timer fires, manual `authc` is the workaround
+    - Files: src/topogen/render.py (rev v1.0.9 → v1.0.10), CHANGES.md (rev v1.2.3 → v1.2.4)
+  - fix(dmvpn): EEM applets now injected LAST in startup config (before final `end`), after all interface/routing/crypto sections — previously EEM applets were placed before the IKEv2/interface/routing sections, and each applet's closing `end` exits IOS-XE global config mode, causing everything after the first EEM `end` to be silently ignored at boot (interfaces never came up, no IPs assigned, no EIGRP/DMVPN)
+    - Root cause: `_inject_pki_client_trustpoint` built one combined block (trustpoint definition + EEM applets) and injected it before `crypto ikev2 proposal`; EEM applet `end` closes the applet submode and exits global config, so all subsequent config (IKEv2, interfaces, routing) was lost
+    - Fix: split into two injection points — trustpoint definition still injected before `crypto ikev2 proposal` (forward-reference fix from v1.0.8), EEM applets now injected in a separate pass before the final `end`
+    - Files: src/topogen/render.py (rev v1.0.8 → v1.0.9), CHANGES.md (rev v1.2.2 → v1.2.3)
+  - fix(dmvpn): IKEv2 PKI trustpoint injection order — `crypto pki trustpoint CA-ROOT-SELF` now injected BEFORE `crypto ikev2 proposal` so IOS-XE does not reject the forward reference to the undefined trustpoint at boot; fixes `pki trustpoint CA-ROOT-SELF` being silently dropped from the IKEv2 profile in running-config on all routers
+    - Root cause: `_inject_pki_client_trustpoint` was injecting before `end` (end of config), placing the trustpoint definition after the IKEv2 profile that referenced it; IOS-XE processes startup config sequentially and silently drops `pki trustpoint` references to trustpoints not yet defined
+    - Fix: injection point changed to before `crypto ikev2 proposal` when present, falling back to before `end`
+    - Files: src/topogen/render.py (rev v1.0.7 → v1.0.8), CHANGES.md (rev v1.2.1 → v1.2.2)
+  - feat(dmvpn): add DMVPN IKEv2 PKI (certificate-based auth)
+    - `--dmvpn-security ikev2-pki`: IKEv2 with RSA-sig auth using trustpoint CA-ROOT-SELF (requires `--pki`)
+    - CLI: add `ikev2-pki` to `--dmvpn-security` choices; validate `ikev2-pki` requires `--pki`
+    - Templates: iosv-dmvpn and csr-dmvpn emit IKEv2 profile with `authentication local rsa-sig`, `authentication remote rsa-sig`, `pki trustpoint CA-ROOT-SELF`; no keyring
+    - Online DMVPN: inject PKI client trustpoint on non-CA routers when `--pki` (flat and flat-pair)
+    - Offline DMVPN: args_bits include `--pki` when pki_enabled for lab description
+    - Files: src/topogen/main.py, src/topogen/render.py, src/topogen/templates/csr-dmvpn.jinja2 (rev v1.1.0), src/topogen/templates/iosv-dmvpn.jinja2 (rev v1.1.0), README.md (rev v1.4.0), CHANGES.md (rev v1.1.8), TODO.md (rev v1.5.3), DEVELOPER.md (rev v1.4.3)
+  - feat(import): add offline-to-CML import workflow
+    - `--import-yaml FILE`: path to existing offline YAML (skip generation); use with `--import`
+    - `--import`: import the generated or specified YAML into CML via virl2_client (requires `--offline-yaml` or `--import-yaml`)
+    - prints file size (KB) before import and lab URL after import (clickable)
+    - `--start` works after import (start runs in background so CLI returns immediately)
+    - workflows: generate then import (`--offline-yaml out/lab.yaml --import`), or import existing (`--import-yaml out/lab.yaml --import`), optionally `--start`
+    - Files: src/topogen/main.py (rev v1.0.0), src/topogen/render.py (rev v1.0.4), src/topogen/__main__.py (rev v1.0.0), CHANGES.md (rev v1.1.7), README.md (rev v1.3.4), TODO.md (rev v1.5.2), DEVELOPER.md (rev v1.4.2)
+  - feat(cli): add `--up FILE` shorthand for `--import-yaml FILE --import --start`
+  - feat(cli): add `--print-up-cmd` to print "When you're ready: topogen --up <file>" after offline generation
+  - fix(ntp): NTP server uses VRF only when --mgmt is enabled (inband `ntp server IP` without OOB)
+  - feat(cli): add `src/topogen/__main__.py` so `python -m topogen` works
+  - fix(gooey): ignore empty `--up` from GUI so "Import requires ..." error does not occur when field left blank
+  - feat(online): make `--start` non-blocking (online and import paths)
+    - start runs in a background thread; CLI prints "Starting lab... (running in background; check CML UI for status)" and returns
+    - lab continues starting on the server; user can watch CML UI
+  - feat(mgmt): add OOB management network support for flat, flat-pair, and dmvpn modes
+    - enable with `--mgmt`
+    - creates `SWoob0` unmanaged switch (with `hide_links: true`) and connects all router mgmt interfaces
+    - mgmt interface uses DHCP by default (slot 5: IOSv Gi0/5, CSR Gi5)
+    - default VRF `Mgmt-vrf`; use `--mgmt-vrf global` for global routing table
+    - optional gateway route with `--mgmt-gw IP`
+    - configurable slot with `--mgmt-slot N`
+    - dmvpn modes (flat and flat-pair underlay) now support `--mgmt` for OOB management
+  - feat(ntp): add NTP server configuration
+    - enable with `--ntp IP`
+    - optional VRF with `--ntp-vrf NAME` (inherits `--mgmt-vrf` if not specified)
+  - feat(mgmt): add external-connector bridge support for OOB management network
+    - enable with `--mgmt-bridge` (requires `--mgmt`)
+    - creates `ext-conn-mgmt` external_connector node with "System Bridge" mode
+    - bridges SWoob0 port 0 to external/physical network for bidirectional connectivity
+    - enables routers to reach external resources (internet, NTP servers, DHCP, etc.)
+    - supported in all offline modes: flat, flat-pair, dmvpn, dmvpn-flat-pair
+  - feat(mgmt): add `--mgmt-bridge` support for online NX and simple modes
+    - OOB management infrastructure created before router creation to avoid interface conflicts
+    - management interfaces connected to SWoob0 at creation time
+    - CSR1000v uses slot-1 adjustment (slot 5 -> GigabitEthernet4)
+  - feat(online): print lab URL after creation for easy browser access
+    - format: `Lab URL: https://<controller>/lab/<lab-id>`
+    - uses VIRL2_URL environment variable
+  - feat(online): add `--start` flag to auto-start labs after creation
+    - starts all nodes automatically when lab creation completes
+    - useful for immediate testing and validation
+  - feat(online): include all CLI args in lab description for repeatability
+    - lab descriptions now include --mgmt, --mgmt-vrf, --mgmt-bridge, --ntp, --ntp-vrf, --start
+    - enables exact command reconstruction from CML2 UI
+  - feat(remark): add `--remark` flag to add custom notes to lab descriptions
+  - feat(flat): add new mode "flat-pair" (odd-even pairing). Odd: Gi0/0 -> access switch and Gi0/1 -> even's Gi0/0. Even: no leaf link. Last odd without partner leaves Gi0/1 unused.
+  - feat(vrf): add optional VRF support for flat-pair pair links (odd router Gi0/1)
+    - enable with `--vrf`
+    - set VRF name with `--pair-vrf NAME`
+    - lab descriptions (online and offline YAML) include VRF flags when enabled
+  - feat(dmvpn): add `--eigrp-stub` to enable `eigrp stub connected summary` on DMVPN flat-pair even routers (pair partners)
+  - feat(iosxe): add CSR1000v (IOS-XE) EIGRP template `csr-eigrp`
+    - uses `vrf definition TENANT` with `rd 1:1` and `vrf forwarding TENANT`
+    - offline YAML uses CSR interface labels (GigabitEthernet1/2/...) when `--device-template csr1000v` is used
+  - feat(dmvpn): add DMVPN mode (hub + N spokes) with offline YAML support
+    - nodes argument is the number of spokes (R1 is hub; R2.. are spokes)
+    - supports `--dmvpn-phase`, `--dmvpn-routing`, `--dmvpn-security`, `--dmvpn-nbma-cidr`, `--dmvpn-tunnel-cidr`
+    - templates: `iosv-dmvpn` and `csr-dmvpn`
+  - feat(dmvpn): support multi-hub DMVPN
+    - select hub router numbers with `--dmvpn-hubs` (e.g., `1,21,41`)
+    - when `--dmvpn-hubs` is set, `nodes` is interpreted as total routers (R1..R<nodes>)
+    - spokes configure NHRP mappings and NHS entries for all hubs
+  - feat(dmvpn): add DMVPN tunnel key option `--dmvpn-tunnel-key` (default: 10)
+  - feat(dmvpn): add DMVPN IKEv2 PSK security profile
+    - enable with `--dmvpn-security ikev2-psk`
+    - provide shared PSK with `--dmvpn-psk <key>`
+  - feat(offline): fail if `--offline-yaml FILE` already exists (no-clobber by default)
+    - overwrite explicitly with `--overwrite`
+  - feat(progress): improve progress/completion visibility
+    - DMVPN online supports `--progress` (opt-in)
+    - DMVPN offline YAML supports `--progress` (opt-in)
+    - DMVPN offline YAML emits a visible "written to <file>" completion message at default loglevel
+  - feat(dmvpn): scale offline DMVPN NBMA segment using a flat-style unmanaged switch fabric (core + access switches)
+    - uses `--flat-group-size` to control routers per access switch
+    - offline YAML layout matches `flat` / `flat-pair` placement style
+  - chore: reduce default `DMVPN-ping.tcl` sweep size to 10 for faster ad-hoc validation
+  - feat(gui): add optional Gooey GUI (`topogen-gui`) and `topogen[gui]` extra
+    - GUI-only: template dropdown and common device-template dropdown
+    - GUI-only: clearer offline/online YAML file labels and file-save pickers
+  - docs: offline YAML output is recommended to be written under the `out/` directory (see README examples)
+  - fix(templates): set `line vty 0 4` `exec-timeout` to `0 0` (was `720 0`)
+  - chore(ping): increase DMVPN-ping.tcl sweep max from 10 to 20 (reverts earlier reduction)
+  - docs(__init__): add File Chain front matter, entry points, and public API exports section
+    - Files: src/topogen/__init__.py (rev v1.1.0)
+  - docs(todo): update PKI naming (RCA-ROOT → CA-ROOT, RCA-ICA → CA-POLICY), mark 4 tasks complete, add future ideas
+    - Files: TODO.md (rev v1.4.0)
+  - docs(readme): add concrete intent/metadata example showing embedded string format and grep command
+    - Files: README.md (rev v1.3.1)
+  - docs(todo): add --pki-scep future idea (replace dead --pki-enroll, CA name fix, router trustpoint)
+    - Files: TODO.md (rev v1.4.1)
+  - feat(pki): add single root CA router for DMVPN PKI
+    - `--pki`: add CA-ROOT node to DMVPN labs (connects to SWnbma0 slot 0 and OOB switch if `--mgmt`)
+    - `--pki-enroll scep|cli` CLI flags (main.py); CA IP = last usable in NBMA CIDR
+    - csr-pki-ca.jinja2 template; CA-ROOT naming; CA-POLICY / CA-SIGN reserved for future
+  - docs(templates): add File Chain front matter with Doc Version to csr-pki-ca.jinja2
+    - Files: src/topogen/templates/csr-pki-ca.jinja2 (rev v1.0.0)
+  - chore(templates): add `alias exec rundiff` to all router templates
+    - `alias exec rundiff show archive config differences system:running-config` placed before `line vty 0 4`
+    - Files: src/topogen/templates/csr-pki-ca.jinja2 (rev v1.0.1)
+    - Files: src/topogen/templates/csr-dmvpn.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/csr-eigrp.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/csr-ospf.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iol-xe.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-dmvpn.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp-nonflat.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp-stub.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv.jinja2 (rev v1.0.0)
+  - feat(pki): harden CA-ROOT template with validated running config changes
+    - RSA key: add `exportable` flag (`crypto key generate rsa modulus 2048 label CA-ROOT.server exportable`)
+    - PKI server: reorder block to match IOS-XE canonical order
+    - PKI server: `lifetime certificate` and `lifetime ca-certificate` 3650/1095 → 7300 days
+    - PKI server: `no shut` → `no shutdown`
+    - HTTP: `ip http secure-server` → `no ip http secure-server` (SCEP uses plain HTTP only)
+    - NTP: `ntp master 5` → `ntp master 6` (matches validated lab config)
+    - Interface: Gi1 always gets `description === SCEP Enrollment URL ===`
+    - EEM: add `CA-ROOT-SET-CLOCK` applet (90s countdown, NTP check, clock force + ntp master fallback)
+    - EEM: init `event manager environment TIME_DONE 0` in startup config
+    - Files: src/topogen/templates/csr-pki-ca.jinja2 (rev v1.0.2)
+  - docs(templates): add File Chain front matter (Doc Version v1.0.0) to 9 templates missing it
+    - Files: src/topogen/templates/csr-dmvpn.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/csr-eigrp.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/csr-ospf.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iol-xe.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-dmvpn.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp-nonflat.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv-eigrp-stub.jinja2 (rev v1.0.0)
+    - Files: src/topogen/templates/iosv.jinja2 (rev v1.0.0)
+
+- version 0.2.4
+  - empty
+
+- version 0.2.3
+  - feat(flat): add flat mode for topology generation
+  - deterministic addressing and EIGRP template updates
+  - docs: add CONTRIBUTING.md and update README/examples
+  - config: add config.sample.toml with sane defaults
+  - templates/flags: add addressing flags and custom-template warning
+  - feat: add offline YAML export for CML 2.9 (schema flag)
+  - chore: ignore generated offline YAML and untrack sample YAML
+  - chore(gitignore): ignore NX lab YAML exports ([Nn][Xx]-*.yaml)
+  - feat(template): add iosv-eigrp-stub template (enable EIGRP stub connected summary)
+  - docs(readme): note non-flat EIGRP default-route limitation (user must originate default)
+  - feat(template): add iosv-eigrp-nonflat for simple/NX (EIGRP 100 on 10.0.0.0/8 and 172.16.0.0/12; passive Lo0)
+  - docs(readme): add non-flat EIGRP examples and note that large online builds may not show UI updates until ~25%
+  - docs(readme): add flat mode examples
 
 - version 0.2.1 (identical to 0.2.0, but make gh actions happy)
 - version 0.2.0

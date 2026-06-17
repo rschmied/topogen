@@ -1,0 +1,51 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto routers (e.g. CSR1000v)
+! - Reads from: CLI (show run | inc crypto pki trustpoint TP-self-signed), interactive prompts (zeroize, remove trustpoint)
+! - Writes to: NVRAM (write memory), event manager environment DO_SSH_DONE 1, removes this applet from running-config, crypto/ip http/restconf config
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-14 | status: unverified — commit when verified working on device
+!
+! EEM applet do-ssh: one-shot at reboot to refresh self-signed cert and HTTPS/RESTCONF.
+! Zeroizes RSA keys, generates new 2048-bit key, removes old TP-self-signed-N trustpoint,
+! toggles ip http secure-server and restconf, sets DO_SSH_DONE 1, then removes this applet and writes mem.
+! Use when device ships with default self-signed cert you want to replace once at first boot.
+!
+! Set DO_SSH_DONE to 0 first so run-once guard works; applet sets it to 1 before deleting itself.
+event manager environment DO_SSH_DONE 0
+!
+!no event manager applet do-ssh
+event manager applet do-ssh authorization bypass
+ event timer cron cron-entry "@reboot" maxrun 130
+ action 0.0 wait 10
+ action 0.1 cli command "enable"
+ action 0.2 syslog msg "EEM do-ssh: executed [step 0.2]"
+ action 0.3 cli command "terminal length 0"
+ action 0.4 cli command "show run | inc crypto pki trustpoint TP-self-signed"
+ action 0.5 set self_cert $_cli_result
+ action 0.6 cli command "config t"
+ action 0.7 cli command "crypto key zeroize rsa" pattern "remove|No Signature"
+ action 0.8 regexp "remove" "$_cli_result"
+ action 0.9 if $_regexp_result eq "1"
+  action 1.0  cli command "yes"
+  action 1.1 end
+ action 1.2 cli command "crypto key generate rsa modulus 2048"
+ action 1.3 regexp "(TP-self-signed-[0-9]+)" "$self_cert" match tp_name
+ action 1.4 if $_regexp_result eq "1"
+  action 1.5  cli command "no crypto pki trustpoint $tp_name" pattern "sure"
+  action 1.6  cli command "y"
+  action 1.7  cli command "no ip http secure-server"
+  action 1.8  cli command "no restconf"
+  action 1.9  cli command "ip http secure-server"
+  action 2.0  cli command "restconf"
+  action 2.1 end
+ action 2.2 cli command "configure terminal"
+ action 2.3 cli command "event manager environment DO_SSH_DONE 1"
+ action 2.4 cli command "no event manager applet do-ssh"
+ action 2.5 cli command "end"
+ action 2.6 cli command "write mem"
+ action 2.7 syslog msg "EEM do-ssh: done [step 2.7]"
+end

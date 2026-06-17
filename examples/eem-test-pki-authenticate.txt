@@ -1,0 +1,35 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config; then "event manager run TEST-PKI-AUTHENTICATE" to trigger
+! - Reads from: CLI (show crypto pki certificates CA-ROOT-SELF)
+! - Writes to: Running-config (crypto pki authenticate accepts CA cert)
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-15 | status: unverified — for troubleshooting authenticate flow
+!
+! EEM applet TEST-PKI-AUTHENTICATE: same logic as CLIENT-PKI-AUTHENTICATE, but manually triggered.
+! Run from exec: event manager run TEST-PKI-AUTHENTICATE
+! Wait for prompt (pattern "yes/no"), wait 2s, then "yes" and cli " " for CR (do not send space to prompt or router treats it as invalid answer).
+!
+no event manager applet TEST-PKI-AUTHENTICATE
+event manager applet TEST-PKI-AUTHENTICATE authorization bypass
+ event none
+ action 1.0  cli command "enable"
+ action 1.1  syslog msg "EEM TEST-PKI-AUTHENTICATE: executed [step 1.1]"
+ action 1.2  cli command "terminal length 0"
+ action 1.3  cli command "show crypto pki certificates CA-ROOT-SELF"
+ action 1.4  regexp "CA Certificate" "$_cli_result" match
+ action 1.5  if $_regexp_result eq "1"
+  action 1.6   syslog msg "EEM TEST-PKI-AUTHENTICATE: CA cert already present; exit [step 1.6]"
+  action 1.7   exit
+  action 1.8  end
+ action 2.0  cli command "configure terminal"
+ action 2.1  cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 2.15 wait 2
+ action 2.2  cli command "yes" pattern ".*"
+ action 2.21 cli command " "
+ action 2.3  cli command "end"
+ action 2.4  syslog msg "EEM TEST-PKI-AUTHENTICATE: authenticated CA-ROOT-SELF [step 2.4]"
+end

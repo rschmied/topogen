@@ -1,3 +1,15 @@
+# File Chain (see DEVELOPER.md):
+# Doc Version: v1.0.3
+# Date Modified: 2026-02-21
+#
+# - Called by: Git (status, add, commit, etc.)
+# - Reads from: (none)
+# - Writes to: (none)
+# - Purpose: Path patterns Git must not track.
+# - Blast Radius: Affects what is committed and what is local-only.
+#
+# ---
+
 *.pyc
 dist
 venv
@@ -15,3 +27,25 @@ __pycache__
 .vscode/
 *.code-workspace
 
+# Claude Code CLI
+.claude/
+
+# Cursor (project rules / AI)
+.cursor/
+
+flatlab-*.yaml
+test-offline-*.yaml
+
+NX-*.yaml
+nx-*.yaml
+
+[Nn][Xx]-*.yaml
+
+out/
+
+# MCP local scratch/output
+.mcp-init.*
+.mcp-tools.*
+
+# Local Terraform run logs
+terraform-*.log

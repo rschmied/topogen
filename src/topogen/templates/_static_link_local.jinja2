@@ -1,0 +1,10 @@
+{# File Chain (see DEVELOPER.md):
+# Doc Version: v1.0.0
+# Date Modified: 2026-06-13
+#
+# - Called by: _iosv_mgmt_oob.jinja2, _csr_mgmt_oob.jinja2
+# - Reads from: mgmt.router_link_local
+#}
+{%- if mgmt and mgmt.router_link_local %}
+    ipv6 address {{ mgmt.router_link_local }} link-local
+{%- endif %}

@@ -1,0 +1,286 @@
+{# File Chain (see DEVELOPER.md):
+# Doc Version: v1.2.2
+# Date Modified: 2026-06-13
+#
+# - Called by: src/topogen/render.py (Jinja render step)
+# - Reads from: Jinja context (config, node, dmvpn settings, feature flags: mgmt, ntp)
+# - Writes to: Startup-config text embedded into offline YAML, or pushed to the controller (online)
+# - Calls into: None (template-only)
+#}
+hostname {{ node.hostname }}
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+no service config
+enable password {{ config.password }}
+ip classless
+ip subnet-zero
+ip domain lookup
+ip name-server {{ config.nameserver }}
+ip domain name {{ config.domainname }}
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh server algorithm authentication password
+username {{ config.username }} privilege 15 secret {{ config.password }}
+cdp run
+{%- if dmvpn_fvrf %}
+ip vrf {{ dmvpn_fvrf }}
+!
+{%- endif %}
+{%- if dmvpn_vrf %}
+ip vrf {{ dmvpn_vrf }}
+!
+{%- endif %}
+{%- if dmvpn_security == "ikev2-psk" %}
+!
+crypto ikev2 proposal TOPGEN-PROP
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+!
+crypto ikev2 policy TOPGEN-POL
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ proposal TOPGEN-PROP
+!
+crypto ikev2 keyring TOPGEN-KR
+ peer ANY
+  address 0.0.0.0 0.0.0.0
+  pre-shared-key local {{ dmvpn_psk }}
+  pre-shared-key remote {{ dmvpn_psk }}
+!
+crypto ikev2 profile TOPGEN-IKEV2
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ match identity remote address 0.0.0.0 0.0.0.0
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local TOPGEN-KR
+!
+crypto ipsec transform-set TOPGEN-TS esp-aes 256 esp-sha256-hmac
+ mode {{ ipsec_mode|default("transport") }}
+!
+crypto ipsec profile TOPGEN-IPSEC
+ set transform-set TOPGEN-TS
+ set ikev2-profile TOPGEN-IKEV2
+!
+{%- elif dmvpn_security == "ikev2-pki" %}
+!
+crypto ikev2 proposal TOPGEN-PROP
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+!
+crypto ikev2 policy TOPGEN-POL
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ proposal TOPGEN-PROP
+!
+crypto ikev2 profile TOPGEN-IKEV2
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ match identity remote fqdn domain {{ config.domainname }}
+ identity local fqdn {{ node.hostname }}.{{ config.domainname }}
+ authentication remote rsa-sig
+ authentication local rsa-sig
+ pki trustpoint {{ dmvpn_trustpoint }}
+!
+crypto ipsec transform-set TOPGEN-TS esp-aes 256 esp-sha256-hmac
+ mode {{ ipsec_mode|default("transport") }}
+!
+crypto ipsec profile TOPGEN-IPSEC
+ set transform-set TOPGEN-TS
+ set ikev2-profile TOPGEN-IKEV2
+!
+{%- elif dmvpn_security == "ikev2-rsa" %}
+!
+crypto ikev2 proposal TOPGEN-PROP
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+!
+crypto ikev2 policy TOPGEN-POL
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ proposal TOPGEN-PROP
+!
+crypto ikev2 profile TOPGEN-IKEV2
+{%- if dmvpn_fvrf %}
+ match fvrf {{ dmvpn_fvrf }}
+{%- endif %}
+ match identity remote fqdn domain {{ config.domainname }}
+ identity local fqdn {{ node.hostname }}.{{ config.domainname }}
+ authentication remote rsa-sig
+ authentication local rsa-sig
+ pki trustpoint {{ dmvpn_trustpoint }}
+!
+crypto ipsec transform-set TOPGEN-TS esp-aes 256 esp-sha256-hmac
+ mode {{ ipsec_mode|default("transport") }}
+!
+crypto ipsec profile TOPGEN-IPSEC
+ set transform-set TOPGEN-TS
+ set ikev2-profile TOPGEN-IKEV2
+!
+{%- endif %}
+!
+{%- set ns = namespace(nbma=None, tun=None, pair=None) %}
+{%- for iface in node.interfaces %}
+{%- if iface.description == "dmvpn nbma" %}
+{%- set ns.nbma = iface.address %}
+{%- endif %}
+{%- if iface.description == "dmvpn tunnel" %}
+{%- set ns.tun = iface.address %}
+{%- endif %}
+{%- if iface.description == "pair link" %}
+{%- set ns.pair = iface.address %}
+{%- endif %}
+{%- endfor %}
+!
+interface GigabitEthernet0/0
+{%- if dmvpn_fvrf %}
+ ip vrf forwarding {{ dmvpn_fvrf }}
+{%- endif %}
+ ip address {{ ns.nbma.ip }} {{ ns.nbma.netmask }}
+ no shutdown
+!
+{%- if ns.pair %}
+interface GigabitEthernet0/1
+{%- if dmvpn_vrf %}
+  ip vrf forwarding {{ dmvpn_vrf }}
+{%- endif %}
+  ip address {{ ns.pair.ip }} {{ ns.pair.netmask }}
+  no shutdown
+!
+{%- endif %}
+int Loopback0
+{%- if dmvpn_vrf %}
+  ip vrf forwarding {{ dmvpn_vrf }}
+{%- endif %}
+  ip address {{ node.loopback.ip }} {{ node.loopback.netmask }}
+!
+interface Tunnel0
+{%- if dmvpn_vrf %}
+  ip vrf forwarding {{ dmvpn_vrf }}
+{%- endif %}
+  ip address {{ ns.tun.ip }} {{ ns.tun.netmask }}
+  no ip redirects
+  tunnel source GigabitEthernet0/0
+{%- if dmvpn_fvrf %}
+  tunnel vrf {{ dmvpn_fvrf }}
+  ip tcp adjust-mss 1360
+{%- endif %}
+  tunnel key {{ dmvpn_tunnel_key }}
+  tunnel mode gre multipoint
+ ip nhrp network-id 10
+ ip nhrp authentication DMVPNKEY
+{%- if dmvpn_security == "ikev2-psk" or dmvpn_security == "ikev2-pki" or dmvpn_security == "ikev2-rsa" %}
+ tunnel protection ipsec profile TOPGEN-IPSEC
+{%- endif %}
+{%- if is_hub %}
+ ip nhrp map multicast dynamic
+{%- if ((dmvpn_phase|default(2))|int) == 3 %}
+ ip nhrp redirect
+{%- endif %}
+ {%- if not dmvpn_vrf %}
+ no ip split-horizon eigrp 100
+ {%- endif %}
+{%- for hub in hub_info if hub.hub_tunnel_ip != ns.tun.ip %}
+ ip nhrp map {{ hub.hub_tunnel_ip }} {{ hub.hub_nbma_ip }}
+ ip nhrp map multicast {{ hub.hub_nbma_ip }}
+{%- endfor %}
+{%- else %}
+{%- if ((dmvpn_phase|default(2))|int) == 3 %}
+ ip nhrp shortcut
+{%- endif %}
+{%- for hub in hub_info %}
+ ip nhrp map {{ hub.hub_tunnel_ip }} {{ hub.hub_nbma_ip }}
+ ip nhrp map multicast {{ hub.hub_nbma_ip }}
+ ip nhrp nhs {{ hub.hub_tunnel_ip }}
+{%- endfor %}
+{%- endif %}
+!
+{% include '_iosv_mgmt_oob.jinja2' %}
+{%- if ntp and ntp.server %}
+{%- if ntp.vrf %}
+ntp server vrf {{ ntp.vrf }} {{ ntp.server }}
+{%- else %}
+ntp server {{ ntp.server }}
+{%- endif %}
+!
+{%- endif %}
+{%- if ntp_oob and ntp_oob.server and ntp_oob.vrf %}
+ntp server vrf {{ ntp_oob.vrf }} {{ ntp_oob.server }}
+!
+{%- endif %}
+{%- if dmvpn_vrf %}
+router eigrp TOPGEN
+ !
+ address-family ipv4 unicast vrf {{ dmvpn_vrf }} autonomous-system 100
+  !
+  af-interface default
+   passive-interface
+  exit-af-interface
+  af-interface Tunnel0
+   no passive-interface
+ {%- if is_hub %}
+    no split-horizon
+ {%- endif %}
+  exit-af-interface
+{%- if ns.pair %}
+  af-interface GigabitEthernet0/1
+   no passive-interface
+  exit-af-interface
+{%- endif %}
+  topology base
+  exit-af-topology
+  network {{ ns.tun.ip }} 0.0.0.0
+  network {{ node.loopback.ip }} 0.0.0.0
+{%- if ns.pair %}
+  network {{ ns.pair.ip }} 0.0.0.0
+{%- endif %}
+ exit-address-family
+!
+{%- else %}
+router eigrp 100
+ network {{ ns.tun.ip }} 0.0.0.0
+ network {{ node.loopback.ip }} 0.0.0.0
+{%- if ns.pair %}
+ network {{ ns.pair.ip }} 0.0.0.0
+{%- endif %}
+ passive-interface default
+ passive-interface GigabitEthernet0/0
+ no passive-interface Tunnel0
+{%- if ns.pair %}
+  no passive-interface GigabitEthernet0/1
+{%- endif %}
+!
+{%- endif %}
+!
+{%- if archive %}
+archive
+ log config
+  logging enable
+  notify syslog contenttype plaintext
+  hidekeys
+ path flash:
+ maximum 5
+ write-memory
+!
+alias exec rundiff show archive config differences system:running-config
+!
+{%- endif %}
+line vty 0 4
+ transport input ssh telnet
+ exec-timeout 0 0
+ login local
+line con 0
+ password {{ config.password }}
+ exec-timeout 0 0
+!
+end

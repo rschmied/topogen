@@ -1,0 +1,46 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto client routers
+! - Reads from: Event manager environment (PKI_DONE), CLI (show crypto pki certificates CA-ROOT-SELF)
+! - Writes to: NVRAM (write memory), event manager environment PKI_DONE 1, removes this applet from running-config
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-14 | status: unverified — commit when verified working on device
+!
+! EEM applet AUTO-AUTH: run-once at boot (countdown 130s) to authenticate CA-ROOT-SELF.
+! Same as CLIENT-PKI-CHAIN but triggered by timer instead of syslog PKI-6-AUTHORITATIVE_CLOCK.
+! Use when you do not use AUTHORITATIVE_CLOCK syslog. Sets PKI_DONE 1, deletes self, write mem.
+!
+! Env (set at boot): PKI_DONE 0.
+!
+event manager environment PKI_DONE 0
+event manager session cli username "cisco"
+!
+!no event manager applet AUTO-AUTH
+event manager applet AUTO-AUTH authorization bypass
+ event timer countdown time 130
+ action 1.0 cli command "enable"
+ action 1.1 syslog msg "EEM AUTO-AUTH: executed [step 1.1]"
+ action 1.2 cli command "terminal length 0"
+ action 2.0 cli command "show crypto pki certificates CA-ROOT-SELF | include CA Certificate"
+ action 2.1 regexp "CA Certificate" "$_cli_result" match
+ action 2.2 if $_regexp_result eq "1"
+  action 2.3  syslog msg "EEM AUTO-AUTH: CA cert already present [step 2.3]"
+  action 2.4  cli command "configure terminal"
+  action 2.5  cli command "event manager environment PKI_DONE 1"
+  action 2.6  cli command "no event manager applet AUTO-AUTH"
+  action 2.7  cli command "end"
+  action 2.8  cli command "write memory"
+  action 2.9  exit
+  action 2.10 end
+ action 3.0 cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 3.1 cli command "yes"
+ action 4.0 cli command "configure terminal"
+ action 4.1 cli command "event manager environment PKI_DONE 1"
+ action 4.2 cli command "no event manager applet AUTO-AUTH"
+ action 4.3 cli command "end"
+ action 4.4 cli command "write memory"
+ action 5.0 syslog msg "EEM AUTO-AUTH: PKI Authentication completed [step 5.0]"
+end

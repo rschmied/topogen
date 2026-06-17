@@ -1,0 +1,33 @@
+! CA-ROOT PKI server example (IOS-XE / CSR1000v)
+! Copy-paste or use as reference. Clock must be set from exec before PKI starts.
+! See README / DEVELOPER for EEM first-boot option.
+!
+hostname CA-ROOT
+!
+ip domain name virl.lab
+username cisco privilege 15 secret YOUR_PASSWORD
+enable password YOUR_PASSWORD
+!
+crypto key generate rsa modulus 2048 label CA-ROOT.server exportable
+!
+ntp master 6
+!
+ip http server
+no ip http secure-server
+!
+crypto pki server CA-ROOT
+ database url flash:
+ database level complete
+ grant auto
+ lifetime ca-certificate 7300
+ lifetime certificate 7300
+ no shutdown
+!
+line vty 0 4
+ transport input ssh telnet
+ exec-timeout 0 0
+ login local
+line con 0
+ exec-timeout 0 0
+!
+end

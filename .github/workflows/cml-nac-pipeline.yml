@@ -1,0 +1,261 @@
+# TG-192: CML NaC CI/CD pipeline skeleton (offline gates always; live apply opt-in)
+#
+# Secrets (names only — set in repo/org settings or vault):
+#   CML_TF_ADDRESS, CML_TF_USERNAME, CML_TF_PASSWORD, CML_TF_SKIP_VERIFY
+#   VIRL2_URL, VIRL2_USER, VIRL2_PASS
+#   IOSXE_USERNAME, IOSXE_PASSWORD
+#   JIRA_WEBHOOK_SECRET (repository_dispatch auth)
+#   GITHUB_TOKEN (workflow dispatch)
+
+name: CML NaC pipeline (TG-192)
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: "Jira ticket key (e.g. TG-192)"
+        required: true
+        default: "TG-192-smoke"
+      node_count:
+        description: "Router count for smoke generate"
+        required: false
+        default: "4"
+      mode:
+        description: "TopoGen topology mode"
+        required: false
+        default: "flat"
+      live_apply:
+        description: "Run live CML terraform apply (requires secrets)"
+        type: boolean
+        required: false
+        default: false
+      teardown:
+        description: "After live apply, revoke user and destroy lab"
+        type: boolean
+        required: false
+        default: false
+  repository_dispatch:
+    types: [cml-lab-provision, cml-lab-teardown]
+
+env:
+  TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugin-cache
+
+jobs:
+  offline-gates:
+    name: "Offline TG-192 gates"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.7.9"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Generate smoke lab bundle
+        run: |
+          LAB="${{ github.event.inputs.jira_key || github.event.client_payload.jira_key || 'TG-192-smoke' }}"
+          NODES="${{ github.event.inputs.node_count || github.event.client_payload.node_count || '4' }}"
+          MODE="${{ github.event.inputs.mode || github.event.client_payload.mode || 'flat' }}"
+          uv run topogen --cml-version 0.3.1 -L "$LAB" "$NODES" \
+            --mode "$MODE" -T iosv --device-template iosv \
+            --offline-yaml "out/${LAB}.yaml" \
+            --nac --bootstrap --terraform-cml2 \
+            --mgmt --mgmt-vrf Mgmt-vrf --mgmt-ipv6-mode slaac --mgmt-bridge \
+            --mgmt-ipv6-cidr fd00:10:254::/64 \
+            --overwrite
+          test -f "out/${LAB}/nac/sync-nac-mgmt.py"
+          test -f "out/${LAB}/nac/NAC-WORKFLOW.md"
+          test -f "out/${LAB}/cml2/main.tf"
+
+      - name: Unit tests (provision-cml-user + NaC writer)
+        run: |
+          uv run pytest tests/test_cml_user_provision.py tests/test_nac_writer.py -q
+          uv run pytest tests/test_cml2_lifecycle.py -q
+
+      - name: Terraform plan contracts
+        env:
+          TOPOGEN_TERRAFORM_PLAN: "1"
+          TOPOGEN_CML2_TERRAFORM_PLAN: "1"
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          uv run pytest tests/test_nac_terraform_plan.py -m terraform -q
+          uv run pytest tests/test_cml2_terraform_plan.py -m cml2_terraform -q
+
+      - name: Upload offline evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg192-offline-${{ github.run_id }}
+          path: |
+            out/**/nac/mgmt_sync.json
+            out/**/nac/NAC-WORKFLOW.md
+          if-no-files-found: ignore
+
+  live-apply:
+    name: "Live CML deploy (opt-in)"
+    needs: offline-gates
+    if: |
+      github.event_name == 'workflow_dispatch' && inputs.live_apply == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.7.9"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Regenerate lab for live apply
+        env:
+          LAB: ${{ github.event.inputs.jira_key }}
+          NODES: ${{ github.event.inputs.node_count }}
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          uv run topogen --cml-version 0.3.1 -L "$LAB" "$NODES" \
+            --mode "$MODE" -T iosv --device-template iosv \
+            --offline-yaml "out/${LAB}.yaml" \
+            --nac --bootstrap --terraform-cml2 \
+            --mgmt --mgmt-vrf Mgmt-vrf --mgmt-ipv6-mode slaac --mgmt-bridge \
+            --mgmt-ipv6-cidr fd00:10:254::/64 \
+            --overwrite
+
+      - name: Terraform apply cml2
+        env:
+          TF_VAR_address: ${{ secrets.CML_TF_ADDRESS }}
+          TF_VAR_username: ${{ secrets.CML_TF_USERNAME }}
+          TF_VAR_password: ${{ secrets.CML_TF_PASSWORD }}
+          TF_VAR_skip_verify: ${{ secrets.CML_TF_SKIP_VERIFY }}
+          VIRL2_URL: ${{ secrets.VIRL2_URL }}
+          VIRL2_USER: ${{ secrets.VIRL2_USER }}
+          VIRL2_PASS: ${{ secrets.VIRL2_PASS }}
+          IOSXE_USERNAME: ${{ secrets.IOSXE_USERNAME }}
+          IOSXE_PASSWORD: ${{ secrets.IOSXE_PASSWORD }}
+          LAB: ${{ github.event.inputs.jira_key }}
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          terraform -chdir="out/${LAB}/cml2" init -input=false
+          terraform -chdir="out/${LAB}/cml2" apply -auto-approve -var=wait=true -input=false
+          echo "LAB_ID=$(terraform -chdir=out/${LAB}/cml2 output -raw lab_id)" >> "$GITHUB_ENV"
+
+      - name: Sync mgmt addresses (emitted script)
+        env:
+          VIRL2_URL: ${{ secrets.VIRL2_URL }}
+          VIRL2_USER: ${{ secrets.VIRL2_USER }}
+          VIRL2_PASS: ${{ secrets.VIRL2_PASS }}
+          LAB: ${{ github.event.inputs.jira_key }}
+        run: |
+          python "out/${LAB}/nac/sync-nac-mgmt.py" \
+            --lab-id "$LAB_ID" \
+            --nac-root "out/${LAB}/nac" \
+            --cml-snoop-only
+
+      - name: Terraform apply nac
+        env:
+          IOSXE_USERNAME: ${{ secrets.IOSXE_USERNAME }}
+          IOSXE_PASSWORD: ${{ secrets.IOSXE_PASSWORD }}
+          LAB: ${{ github.event.inputs.jira_key }}
+        run: |
+          terraform -chdir="out/${LAB}/nac" init -input=false
+          terraform -chdir="out/${LAB}/nac" apply -auto-approve -input=false
+
+      - name: Provision customer CML user
+        env:
+          VIRL2_URL: ${{ secrets.VIRL2_URL }}
+          VIRL2_USER: ${{ secrets.VIRL2_USER }}
+          VIRL2_PASS: ${{ secrets.VIRL2_PASS }}
+          LAB: ${{ github.event.inputs.jira_key }}
+        run: |
+          uv run topogen provision-cml-user \
+            --lab-id "$LAB_ID" \
+            --username "tg-${LAB}" \
+            --description "TG-192 CI scoped user" \
+            --output-json "out/${LAB}/live/customer-user.json"
+
+      - name: Upload live evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg192-live-${{ github.run_id }}
+          path: |
+            out/**/live/**
+            out/**/nac/mgmt_sync.json
+          if-no-files-found: ignore
+
+      - name: Teardown (opt-in)
+        if: github.event.inputs.teardown == true
+        env:
+          TF_VAR_address: ${{ secrets.CML_TF_ADDRESS }}
+          TF_VAR_username: ${{ secrets.CML_TF_USERNAME }}
+          TF_VAR_password: ${{ secrets.CML_TF_PASSWORD }}
+          TF_VAR_skip_verify: ${{ secrets.CML_TF_SKIP_VERIFY }}
+          VIRL2_URL: ${{ secrets.VIRL2_URL }}
+          VIRL2_USER: ${{ secrets.VIRL2_USER }}
+          VIRL2_PASS: ${{ secrets.VIRL2_PASS }}
+          LAB: ${{ github.event.inputs.jira_key }}
+        run: |
+          uv run topogen provision-cml-user --username "tg-${LAB}" --revoke
+          terraform -chdir="out/${LAB}/cml2" destroy -auto-approve -input=false
+
+  teardown:
+    name: "Teardown on Jira Done"
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'cml-lab-teardown'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.7.9"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Revoke customer user and destroy lab
+        env:
+          TF_VAR_address: ${{ secrets.CML_TF_ADDRESS }}
+          TF_VAR_username: ${{ secrets.CML_TF_USERNAME }}
+          TF_VAR_password: ${{ secrets.CML_TF_PASSWORD }}
+          TF_VAR_skip_verify: ${{ secrets.CML_TF_SKIP_VERIFY }}
+          VIRL2_URL: ${{ secrets.VIRL2_URL }}
+          VIRL2_USER: ${{ secrets.VIRL2_USER }}
+          VIRL2_PASS: ${{ secrets.VIRL2_PASS }}
+          LAB: ${{ github.event.client_payload.jira_key }}
+          CUSTOMER_USER: ${{ github.event.client_payload.customer_username }}
+        run: |
+          uv run topogen provision-cml-user --username "$CUSTOMER_USER" --revoke
+          if [ -d "out/${LAB}/cml2" ]; then
+            terraform -chdir="out/${LAB}/cml2" destroy -auto-approve -input=false
+          fi

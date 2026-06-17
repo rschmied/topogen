@@ -1,0 +1,72 @@
+iosxe:
+  devices:
+  - name: iosv-01
+    host: 10.10.0.1
+    configuration:
+      system:
+        hostname: R1
+      cdp:
+        run: true
+      routing:
+        ospf_processes:
+        - id: 1
+          passive_interfaces:
+          - interface_type: Loopback
+            interface_id: '0'
+          networks:
+          - ip: 10.20.0.1
+            wildcard: 0.0.0.0
+            area: '0'
+          - ip: 10.10.0.1
+            wildcard: 0.0.0.0
+            area: '0'
+      interfaces:
+        ethernets:
+        - type: GigabitEthernet
+          id: 0/0
+          shutdown: false
+          cdp: true
+          ipv4:
+            address: 10.10.0.1
+            address_mask: 255.255.0.0
+          description: mgmt flat
+        loopbacks:
+        - id: '0'
+          ipv4:
+            address: 10.20.0.1
+            address_mask: 255.255.255.255
+  - name: iosv-02
+    host: 10.10.0.2
+    configuration:
+      system:
+        hostname: R2
+      cdp:
+        run: true
+      routing:
+        ospf_processes:
+        - id: 1
+          passive_interfaces:
+          - interface_type: Loopback
+            interface_id: '0'
+          networks:
+          - ip: 10.20.0.2
+            wildcard: 0.0.0.0
+            area: '0'
+          - ip: 10.10.0.2
+            wildcard: 0.0.0.0
+            area: '0'
+      interfaces:
+        ethernets:
+        - type: GigabitEthernet
+          id: 0/0
+          shutdown: false
+          cdp: true
+          ipv4:
+            address: 10.10.0.2
+            address_mask: 255.255.0.0
+          description: mgmt flat
+        loopbacks:
+        - id: '0'
+          ipv4:
+            address: 10.20.0.2
+            address_mask: 255.255.255.255

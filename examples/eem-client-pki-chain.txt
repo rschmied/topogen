@@ -1,0 +1,66 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto client routers
+! - Reads from: Event manager environment (PKI_DONE), CLI (show crypto pki certificates CA-ROOT-SELF), syslog (PKI-6-AUTHORITATIVE_CLOCK)
+! - Writes to: NVRAM (write memory), event manager environment PKI_DONE 1, removes this applet from running-config
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-14 | status: unverified — commit when verified working on device
+!
+! EEM applet CLIENT-PKI-CHAIN: run "crypto pki authenticate" and answer "yes".
+! Trigger: syslog "PKI-6-AUTHORITATIVE_CLOCK" (CA has clock; clients can contact CA).
+! Run-once per trigger: sets PKI_DONE 1, deletes self, write mem.
+! Use with TopoGen --pki: client router has trustpoint CA-ROOT-SELF (SCEP URL).
+!
+! Use "pattern yes/no" on the authenticate command so EEM waits for the
+! prompt and sends "yes" as the *response* to that prompt (next action).
+!
+! Env (set at boot): PKI_DONE 0. Optional shared: TIME_DONE 0, PKI_AUTH_DONE 0, PKI_SAVE_DONE 0.
+!
+event manager environment PKI_DONE 0
+event manager session cli username "cisco"
+!
+!no event manager applet CLIENT-PKI-CHAIN
+event manager applet CLIENT-PKI-CHAIN authorization bypass
+ event syslog pattern "PKI-6-AUTHORITATIVE_CLOCK"
+ action 0.0 wait 120
+ action 0.1 cli command "enable"
+ action 0.2 syslog msg "EEM CLIENT-PKI-CHAIN: executed [step 0.2]"
+ action 0.3 cli command "terminal length 0"
+ action 0.4 cli command "show event manager environment | include PKI_DONE"
+ action 0.5 regexp "PKI_DONE 1" "$_cli_result" match
+ action 0.6 if $_regexp_result eq "1"
+  action 0.7  exit
+  action 0.8 end
+ action 1.0 wait 10
+ action 2.0 cli command "show crypto pki certificates CA-ROOT-SELF | include CA Certificate"
+ action 2.1 regexp "CA Certificate" "$_cli_result" match
+ action 2.2 if $_regexp_result eq "1"
+  action 2.3  syslog msg "EEM CLIENT-PKI-CHAIN: CA cert already present [step 2.3]"
+  action 2.4  cli command "configure terminal"
+  action 2.5  cli command "event manager environment PKI_DONE 1"
+  action 2.6  cli command "no event manager applet CLIENT-PKI-CHAIN"
+  action 2.7  cli command "end"
+  action 2.8  cli command "write memory"
+  action 2.9  exit
+  action 2.10 end
+ action 3.0 syslog msg "EEM CLIENT-PKI-CHAIN: authenticating CA-ROOT-SELF [step 3.0]"
+ action 3.1 cli command "crypto pki authenticate CA-ROOT-SELF" pattern "yes/no"
+ action 3.2 cli command "yes"
+ action 3.3 wait 10
+ action 4.0 cli command "show crypto pki certificates CA-ROOT-SELF | include CA Certificate"
+ action 4.1 regexp "CA Certificate" "$_cli_result" match
+ action 4.2 if $_regexp_result ne "1"
+  action 4.3  syslog msg "EEM CLIENT-PKI-CHAIN: CA cert still missing; abort [step 4.3]"
+  action 4.4  exit
+  action 4.5 end
+ action 5.0 syslog msg "EEM CLIENT-PKI-CHAIN: writing memory after PKI [step 5.0]"
+ action 5.1 cli command "configure terminal"
+ action 5.2 cli command "event manager environment PKI_DONE 1"
+ action 5.3 cli command "no event manager applet CLIENT-PKI-CHAIN"
+ action 5.4 cli command "end"
+ action 5.5 cli command "write memory"
+ action 5.6 syslog msg "EEM CLIENT-PKI-CHAIN: done [step 5.6]"
+end

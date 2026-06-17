@@ -1,0 +1,42 @@
+! File Chain (see DEVELOPER.md):
+! Doc Version: v1.0.1
+! Date Modified: 2026-02-16
+!
+! - Called by: Operators pasting config onto client routers
+! - Reads from: Event manager environment (SAVE_DONE), CLI (show crypto pki certificates CA-ROOT-SELF)
+! - Writes to: NVRAM (write memory), event manager environment SAVE_DONE 1, removes this applet from running-config
+! - Calls into: None (IOS EEM interpreter)
+!
+! doc_rev: 1 | date: 2026-02-14 | status: unverified — commit when verified working on device
+!
+! EEM applet CLIENT-PKI-SAVE: run write memory once the identity cert is obtained.
+! Prevents cert loss on reboot — saves config + certs to NVRAM when cert is present.
+! Trigger: countdown 180s (after time + auth + auto-enroll have had time to run).
+! Run-once: sets SAVE_DONE 1, deletes self, write mem.
+!
+event manager environment SAVE_DONE 0
+!
+!no event manager applet CLIENT-PKI-SAVE
+event manager applet CLIENT-PKI-SAVE authorization bypass
+ event timer countdown time 180
+ action 1.0 cli command "enable"
+ action 1.1 syslog msg "EEM CLIENT-PKI-SAVE: executed [step 1.1]"
+ action 1.2 cli command "terminal length 0"
+ action 2.0 cli command "show event manager environment | include SAVE_DONE"
+ action 2.1 regexp "SAVE_DONE 1" "$_cli_result" match
+ action 2.2 if $_regexp_result eq "1"
+  action 2.3  exit
+  action 2.4 end
+ action 3.0 cli command "show crypto pki certificates CA-ROOT-SELF"
+ action 3.1 regexp "Certificate Name:.*Available|Status: Available" "$_cli_result" match
+ action 3.2 if $_regexp_result ne "1"
+  action 3.3  syslog msg "EEM CLIENT-PKI-SAVE: no identity cert yet; exit [step 3.3]"
+  action 3.4  exit
+  action 3.5 end
+ action 4.0 cli command "configure terminal"
+ action 4.1 cli command "event manager environment SAVE_DONE 1"
+ action 4.2 cli command "no event manager applet CLIENT-PKI-SAVE"
+ action 4.3 cli command "end"
+ action 4.4 cli command "write memory"
+ action 4.5 syslog msg "EEM CLIENT-PKI-SAVE: certs saved (write memory) [step 4.5]"
+end
