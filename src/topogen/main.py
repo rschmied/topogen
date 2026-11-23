@@ -9,9 +9,9 @@ import os
 import sys
 
 import topogen
+from topogen.colorlog import CustomFormatter
 from topogen.models import TopogenError
 from topogen.render import Renderer, get_templates
-from topogen.colorlog import CustomFormatter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def setup_logging(loglevel: str):
     """sets up the logging, takes the given loglevel and uses the custom,
     colorful log formatter
     """
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.WARNING)
     level, unknown_loglevel = get_log_level(loglevel)
     logging.root.setLevel(level)
     custom_formatter = CustomFormatter()

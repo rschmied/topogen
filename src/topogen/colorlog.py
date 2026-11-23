@@ -6,6 +6,7 @@ https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
 """
 
 import logging
+from typing import ClassVar
 
 
 class CustomFormatter(logging.Formatter):
@@ -22,7 +23,7 @@ class CustomFormatter(logging.Formatter):
         "%(asctime)s - %(message)s - (%(filename)s:%(lineno)d)"
     )
 
-    FORMATS = {
+    FORMATS: ClassVar[dict[int, str]] = {
         logging.DEBUG: grey + template + reset,
         logging.INFO: cyan + template + reset,
         logging.WARNING: yellow + template + reset,

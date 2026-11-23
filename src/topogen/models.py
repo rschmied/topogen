@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from ipaddress import IPv4Address, IPv4Interface
+from typing import ClassVar
 
 
 class TopogenError(Exception):
@@ -19,7 +20,7 @@ class Point:
 class CoordsGenerator:
     """a generator which generates square spiral coordinates"""
 
-    DIRSM = {"l": "u", "u": "r", "r": "d", "d": "l"}
+    DIRSM: ClassVar[dict[str, str]] = {"l": "u", "u": "r", "r": "d", "d": "l"}
 
     def __init__(self, distance: int = 200):
         self.distance = distance

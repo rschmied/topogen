@@ -1,10 +1,10 @@
 """configuration for topogen"""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from ipaddress import IPv4Network
 
-from serde import deserialize, serialize, SerdeError
+from serde import SerdeError, deserialize, serialize
 from serde.toml import from_toml, to_toml
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,8 +16,8 @@ _LOGGER = logging.getLogger(__name__)
 class Config:
     """topology generator configuration"""
 
-    loopbacks: IPv4Network = IPv4Network("10.0.0.0/8")
-    p2pnets: IPv4Network = IPv4Network("172.16.0.0/12")
+    loopbacks: IPv4Network = field(default_factory=lambda: IPv4Network("10.0.0.0/8"))
+    p2pnets: IPv4Network = field(default_factory=lambda: IPv4Network("172.16.0.0/12"))
     nameserver: str = "8.8.8.8"
     domainname: str = "virl.lab"
     username: str = "cisco"

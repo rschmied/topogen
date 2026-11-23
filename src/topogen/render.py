@@ -5,13 +5,12 @@ import logging
 import math
 import os
 from argparse import Namespace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from ipaddress import IPV4LENGTH, IPv4Interface, IPv4Network
-from typing import Any, Set, Tuple, Union
+from typing import Any
 
 import enlighten
 import networkx as nx
-
 from httpx import ConnectTimeout, HTTPError
 from jinja2 import (
     Environment,
@@ -59,10 +58,10 @@ def disable_pcl_loggers():
     ]
     for logger in loggers:
         if logger.name.startswith("virl2_client"):
-            logger.setLevel(logging.WARN)
+            logger.setLevel(logging.WARNING)
 
 
-def order_iface_pair(iface_pair: dict, this: int) -> Tuple[Any, Any]:
+def order_iface_pair(iface_pair: dict, this: int) -> tuple[Any, Any]:
     """order the interface pair so that the first one is the one with the
     given index "this", and the second one is the other one.
     """
@@ -157,7 +156,7 @@ class Renderer:
 
     def initialize_client(self) -> ClientLibrary:
         """initialize the PCL"""
-        cainfo: Union[bool, str] = self.args.cafile
+        cainfo: bool | str = self.args.cafile
         try:
             os.stat(self.args.cafile)
         except (FileNotFoundError, TypeError):
@@ -215,8 +214,9 @@ class Renderer:
             graph.nodes[key]["pos"] = Point(int(value[0]), int(value[1]))
         return graph
 
-    def create_node(self, label: str, node_def: str, coords=Point(0, 0)):
+    def create_node(self, label: str, node_def: str, coords: Point | None = None):
         """create a CML2 node with the given attributes"""
+        coords = coords or Point(0, 0)
 
         try:
             node = self.lab.create_node(
@@ -233,24 +233,24 @@ class Renderer:
         except HTTPError as exc:
             raise TopogenError("API error") from exc
 
-    def create_ext_conn(self, coords=Point(0, 0)):
+    def create_ext_conn(self, coords: Point | None = None):
         """create an external connector node"""
         return self.create_node(EXT_CON_NAME, "external_connector", coords)
 
-    def create_dns_host(self, coords=Point(0, 0)):
+    def create_dns_host(self, coords: Point | None = None):
         """create the DNS host node"""
         node = self.create_node(DNS_HOST_NAME, "alpine", coords)
         node.create_interface()  # this is eth1
         return node
 
-    def create_router(self, label: str, coords=Point(0, 0)):
+    def create_router(self, label: str, coords: Point | None = None):
         """create a router node (this uses the template given, e.g. iosv)"""
         return self.create_node(label, self.args.template, coords)
 
-    def next_network(self) -> Set[IPv4Interface]:
+    def next_network(self) -> set[IPv4Interface]:
         """return the next point-to-point network"""
         p2pnet = next(self.p2pnets)
-        return set(IPv4Interface(f"{i}/{p2pnet.netmask}") for i in p2pnet.hosts())
+        return {IPv4Interface(f"{i}/{p2pnet.netmask}") for i in p2pnet.hosts()}
 
     def render_node_network(self) -> int:
         """render the NX random network"""
@@ -331,16 +331,14 @@ class Renderer:
         )
         _LOGGER.warning("Creating ext-conn link")
 
-        core = sorted(
-            nx.degree_centrality(graph).items(), key=lambda e: e[1], reverse=True
-        )[0][0]
+        core = max(nx.degree_centrality(graph).items(), key=lambda e: e[1])[0]
         _LOGGER.warning("Identified core node is R%s", core + 1)
 
         _LOGGER.warning("Creating node configurations")
         for node_index, nbrs in graph.adj.items():
             interfaces: list[TopogenInterface] = []
 
-            for _, eattr in nbrs.items():
+            for eattr in nbrs.values():
                 prefix = eattr["prefix"]
                 hosts = eattr["hosts"]
                 order = eattr["order"]
@@ -400,7 +398,7 @@ class Renderer:
             config = self.template.render(
                 config=self.config,
                 node=node,
-                date=datetime.now(timezone.utc),
+                date=datetime.now(UTC),
                 origin="" if node_index != core else dns_addr,
             )
             cmlnode: Node = graph.nodes[node_index]["cml2node"]

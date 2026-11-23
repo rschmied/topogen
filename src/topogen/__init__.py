@@ -3,8 +3,8 @@
 import importlib.metadata as importlib_metadata
 
 from .config import Config
-from .render import Renderer
 from .main import main
+from .render import Renderer
 
 _metadata = importlib_metadata.metadata("topogen")
 __version__ = _metadata["Version"]
