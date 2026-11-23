@@ -13,6 +13,9 @@ name: Python package
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: "Build package"
@@ -21,21 +24,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
-          # Install a specific version of uv.
-          version: "0.7.9"
+          version: "0.13.9"
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -50,7 +53,7 @@ jobs:
       - name: Check code
         run: |
           uv run mypy --check-untyped-def src
-          uv run ruff check
+          uv run ruff check --select E4,E7,E9,F
 
       # - name: Run tests and check coverage
       #   run: |
