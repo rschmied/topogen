@@ -122,12 +122,17 @@ There are two modes available right now:
 
 #### Templates
 
-To list the available templates, use the `--list-templates` switch.  Currently,
-only an IOSv template is provided.
+To list the available templates, use the `--list-templates` switch. Templates
+are provided for IOSv, IOL-XE, and the FRR Docker node from
+[`CiscoLearning/cml-docker-containers`](https://github.com/CiscoLearning/cml-docker-containers/tree/main/containers/frr).
 
-To choose a specific template, provide the `--template=iosv` switch.
+Choose a template with `--template`, for example `--template=iosv` or
+`--template=frr`. The template name must match the CML node-definition ID.
+All router nodes in a generated topology use the selected template.
 
-Currently, all router nodes are using the same template.
+The FRR node receives its native configuration as `node.cfg`, day-zero commands
+as `boot.sh`, and enabled daemon names as `protocols`, as required by the modern
+FRR Docker node definition.
 
 #### Other Configuration
 

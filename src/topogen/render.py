@@ -25,7 +25,7 @@ from virl2_client.models import Interface, Lab, Node
 from topogen import templates
 from topogen.config import Config
 from topogen.dnshost import dnshostconfig
-from topogen.lxcfrr import lxcfrr_bootconfig
+from topogen.frr import frr_bootconfig
 from topogen.models import (
     CoordsGenerator,
     DNShost,
@@ -404,25 +404,27 @@ class Renderer:
             cmlnode: Node = graph.nodes[node_index]["cml2node"]
             if cmlnode is None:
                 continue
-            # this is a special one-off for the LXC / frr variannt
-            if self.args.template == "lxc":
+            # The FRR Docker node uses three provisioned configuration files.
+            if self.args.template == "frr":
                 nameserver = (
                     self.config.nameserver if self.config.nameserver else dns_addr.ip
                 )
                 cfg = [
                     {
+                        "name": "node.cfg",
+                        "content": config,
+                    },
+                    {
                         "name": "boot.sh",
-                        "content": lxcfrr_bootconfig(
+                        "content": frr_bootconfig(
                             self.config,
-                            node,
-                            ["ospf", "bgp"],
                             str(nameserver),
                             False,
                         ),
                     },
                     {
-                        "name": "node.cfg",
-                        "content": config,
+                        "name": "protocols",
+                        "content": "ospfd\nbgpd\n",
                     },
                 ]
                 cmlnode.configuration = cfg  # type: ignore[method-assign]
