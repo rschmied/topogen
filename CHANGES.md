@@ -2,6 +2,15 @@
 
 This file lists changes.
 
+- version 0.2.3
+  - replace the legacy LXC FRR variant with the modern CML FRR Docker node
+  - provision the FRR `node.cfg`, `boot.sh`, and `protocols` files
+  - update locked dependencies
+  - test supported Python versions 3.12 through 3.14
+  - harden and fix the release workflow
+  - enable the full Ruff rule set and resolve its findings
+- version 0.2.2
+  - loosen dependency constraints
 - version 0.2.1 (identical to 0.2.0, but make gh actions happy)
 - version 0.2.0
   - properly configure name server / domain name
