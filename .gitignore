@@ -8,6 +8,9 @@ venv
 .mise.toml
 mise.toml
 __pycache__
+.coverage
+coverage.xml
+htmlcov/
 
 # VIM
 *.swp

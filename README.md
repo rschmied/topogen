@@ -1,8 +1,6 @@
 # TopoGen for CML2
 
-This package provides a `topogen` command which can create CML2 topologies.
-It does this by using the PCL (VIRL Python Client Library) to talk to a live
-controller, creating the lab, nodes and links on the fly.
+This package provides a `topogen` command which writes CML/simple YAML topologies offline.
 
 ![Demo](.images/demo.gif)
 
@@ -20,9 +18,7 @@ controller, creating the lab, nodes and links on the fly.
 
 ## Installation
 
-> **Important** Ensure that the PCL you install is compatible with your controller.
-If it doesn't work, then try installing the wheel with Pip manually. The wheel can
-be downloaded from your controller at the `/client` location.
+> **Important** TopoGen no longer talks to a live controller. It writes YAML offline and does not need the PCL.
 
 Steps:
 
@@ -40,33 +36,13 @@ Alternatively, use Astral/uv:
    run with `uv run`)
 4. install using `uv sync --frozen`
 
-If the Networkx mode (`--mode nx`) should be used, then the following
-command is required instead to install SciPy and NumPy dependencies: `uv sync
---all-extras --dev --frozen`
+If the random graph mode is used, install the extra graph dependencies with:
+`uv sync --all-extras --dev --frozen`
 
 At this point, the `topogen` command should be available. Alternatively,
 if you did not activate the venv, use `uv run topogen`.
 
 ## Configuration
-
-### CML2
-
-CML2 access is provided via the environment.  Like shown with this shell snippet:
-
-```shell
-VIRL2_URL="https://cml-controller.cml.lab"
-VIRL2_USER="someuser"
-VIRL2_PASS="somepass"
-export VIRL2_URL VIRL2_USER VIRL2_PASS
-```
-
-In addition, a CA file in PEM format can be provided which can be used to verify
-the cert presented by the controller... The default CA file of the controller is
-included in the repo.
-
-For this to work, it's also required to have proper name resolution for the CML2
-controller (e.g. add `192.168.254.123 cml-controller.cml.lab` with **the correct
-IP** into your hosts file).
 
 ### Tool
 
@@ -75,8 +51,8 @@ providing `-h` or `--help`:
 
 ```plain
 $ topogen --help
-usage: topogen [-h] [-c CONFIGFILE] [-w] [-v] [-l LOGLEVEL] [-p] [--ca CAFILE] [-i] [-d DISTANCE] [-L LABNAME] [-T TEMPLATE]
-               [--list-templates] [-m {nx,simple}]
+usage: topogen [-h] [-c CONFIGFILE] [-w] [-v] [-l LOGLEVEL] [--ca CAFILE] [-i] [-d DISTANCE] [-L LABNAME] [-T TEMPLATE]
+               [--list-templates] [--output OUTPUT] [-m {nx,simple}]
                [nodes]
 
 generate test topology files and configurations for CML2
@@ -105,20 +81,14 @@ configuration:
   -v, --version         show program's version number and exit
   -l LOGLEVEL, --loglevel LOGLEVEL
                         DEBUG, INFO, WARN, ERROR, CRITICAL, defaults to WARN
-  -p, --progress        show a progress bar
 $
 ```
 
-At a minimum, the amount of nodes to be created must be provided.
+At a minimum, the amount of nodes to be created must be provided for the sample generator.
 
 #### Modes
 
-There are two modes available right now:
-
-- `nx`: this creates a partially meshed topology.  It also places nodes in clusters
-  which is more pronounced with many nodes (>40).
-- `simple` (which is the default): this creates a single string of nodes, laid out
-  in a square / spiral pattern.
+TopoGen writes offline YAML. The default command emits a simple sample topology that can be saved and inspected locally.
 
 #### Templates
 
@@ -155,21 +125,13 @@ second interface / NIC facing the router network).
 
 ## Operation
 
-The topology has an external connector and a DNS-host (based on Alpine).  On
-that host, a dnsmasq DNS server is running which can resolve all IP addresses
-of all topology router loopbacks.  All topology routers are also using this
-DNS server (assuming they have connectivity to it).
+TopoGen now focuses on offline YAML generation. The sample output still models routers and links, but no live controller is involved.
 
 > [!NOTE]
 >
-> Since the Alpine node does not include dnsmasq by default, it
-> will pull in and install this package from the Internet. Therefore it
-> is required to have Internet connectivity for this to work! Once the
-> network has been created and full connectivity is established, it
-> should be possible to SSH/Telnet to all nodes using their node names.
-> The below shows logging into the Jumphost (at 192.168.255.100) via
-> the controller (at 192.168.122.245) and then onward to router `r1`
-> using its name.
+> The sample DNS host installs dnsmasq at boot. Internet access is needed
+> for that first boot only. After the topology is up, you can SSH/Telnet to
+> the nodes by name.
 
 ```plain
 rschmied@delle:~/Projects/topogen$ ssh -tp1122 sysuser@192.168.122.245 ssh cisco@192.168.255.100
