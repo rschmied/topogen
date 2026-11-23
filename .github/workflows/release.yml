@@ -29,6 +29,16 @@ jobs:
         with:
           python-version-file: ".python-version"
 
+      - name: Verify tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          package_version="$(uv version --short)"
+          if [[ "$RELEASE_TAG" != "v$package_version" ]]; then
+            echo "Tag $RELEASE_TAG does not match package version v$package_version" >&2
+            exit 1
+          fi
+
       - name: Build distribution
         run: uv build
 
