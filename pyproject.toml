@@ -45,8 +45,10 @@ requires-python = ">=3.12"
 dependencies = [
   "jinja2>=3",
   "networkx>=3",
+  "numpy>=2.2.0",
   "pyserde[toml]>=0.22.2",
   "PyYAML>=6.0.0",
+  "scipy>=1.14.1",
 ]
 
 [project.urls]
@@ -58,16 +60,9 @@ Changelog = "https://github.com/crschmied/topogen/blob/master/CHANGELOG.md"
 [project.scripts]
 topogen = "topogen:main"
 
-[project.optional-dependencies]
-all = ["numpy>=2.2.0", "scipy>=1.14.1"]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["mypy>=1.16.0", "pytest>=8.0.0", "pytest-cov>=6.0.0", "ruff>=0.8.3", "types-networkx>=3.5.0.20250531", "types-PyYAML>=6.0.12.20250915"]
-
-[[tool.mypy.overrides]]
-module = ["enlighten.*"]
-follow_untyped_imports = true
+dev = ["pytest>=8.0.0", "pytest-cov>=6.0.0", "ruff>=0.8.3", "ty>=0.0.110", "types-networkx>=3.5.0.20250531", "types-PyYAML>=6.0.12.20250915"]
