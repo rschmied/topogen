@@ -1,6 +1,6 @@
 [project]
 name = "topogen"
-version = "0.3.1"
+version = "0.3.1.post1"
 authors = [{ name = "Ralph Schmieder", email = "rschmied@cisco.com" }]
 description = "Generate test topology files and configurations for CML2"
 readme = "README.md"
