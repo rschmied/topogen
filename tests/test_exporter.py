@@ -211,6 +211,18 @@ def test_exported_shape_matches_expected_keys():
             ),
             "missing node",
         ),
+        (
+            ExportTopology(
+                lab=ExportLab(version="0.3.0", title="lab"),
+                nodes=[
+                    ExportNode(id="n1", label="R1", node_definition="frr", x=0, y=0)
+                ],
+                links=[
+                    ExportLink(id="", n1="n1", n2="n1", i1="i0", i2="i0", label="link")
+                ],
+            ),
+            "link id is required",
+        ),
     ],
 )
 def test_validate_topology_rejects_invalid_nodes_and_links(topo, match):
@@ -478,6 +490,8 @@ def test_build_text_ids():
     assert build_text_ids(3, "n") == ["n0", "n1", "n2"]
     with pytest.raises(TopologyPlanError):
         build_text_ids(-1, "n")
+    with pytest.raises(TopologyPlanError):
+        build_text_ids(1, "")
 
 
 @pytest.mark.parametrize(

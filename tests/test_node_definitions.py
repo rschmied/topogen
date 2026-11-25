@@ -47,6 +47,11 @@ def test_provisioned_interface_count(node_definition, linked_count, expected):
     assert provisioned_interface_count(node_definition, linked_count) == expected
 
 
+def test_router_definition_rejects_unknown_type():
+    with pytest.raises(ValueError, match="unsupported router definition"):
+        router_definition("unknown")
+
+
 def test_interface_labels_rejects_unknown_or_over_capacity_definition():
     with pytest.raises(ValueError, match="unsupported"):
         interface_labels("unknown", 1)

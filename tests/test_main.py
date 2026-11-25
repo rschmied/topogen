@@ -90,7 +90,7 @@ def test_create_argparser_defaults():
     args = parser.parse_args(["2"])
     assert args.output == "topogen_lab.yaml"
     assert args.nodes == 2
-    assert args.mode == "simple"
+    assert args.mode == "nx"
 
 
 def test_create_argparser_mode_and_template_defaults():
@@ -105,3 +105,29 @@ def test_main_invalid_nodes(monkeypatch):
     monkeypatch.setattr(mainmod.sys, "argv", ["topogen", "abc"])
     with pytest.raises(ValueError):
         mainmod.valid_node_count("abc")
+
+
+def test_setup_logging_warns_for_unknown_level(caplog):
+    with caplog.at_level(mainmod.logging.WARNING):
+        mainmod.setup_logging("invalid")
+    assert "Unknown log level: INVALID" in caplog.messages
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [
+        (["topogen"], "required: nodes"),
+        (["topogen", "2", "--template", "unknown"], "unsupported template"),
+    ],
+)
+def test_main_rejects_missing_nodes_and_unknown_template(
+    monkeypatch, capsys, argv, message
+):
+    monkeypatch.setattr(mainmod, "setup_logging", lambda *_: None)
+    monkeypatch.setattr(mainmod.sys, "argv", argv)
+    monkeypatch.setattr(
+        mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls())
+    )
+    with pytest.raises(SystemExit):
+        mainmod.main()
+    assert message in capsys.readouterr().err

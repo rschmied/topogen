@@ -32,8 +32,8 @@ and an external connector.
 
 ### Modes
 
-- `simple`: a router chain on square-spiral coordinates
-- `nx`: a connected random-shell router graph
+- `nx`: the default; a connected random-shell router graph
+- `simple`: an alternate router chain on square-spiral coordinates
 
 Both modes write offline YAML and include the DNS host and external connector.
 

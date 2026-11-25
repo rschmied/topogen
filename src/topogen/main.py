@@ -107,7 +107,7 @@ def create_argparser():
         "-m",
         "--mode",
         choices=("nx", "simple"),
-        default="simple",
+        default="nx",
         help='mode of operation, default is "%(default)s"',
     )
     parser.add_argument(
