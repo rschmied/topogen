@@ -25,7 +25,7 @@ int Loopback0
 router ospf 1
     passive-interface Loopback0
     network {{ node.loopback.ip }} 0.0.0.0 area 0
-    {%- for iface in node.interfaces %}
+    {%- for iface in node.interfaces if iface.description != "unused" %}
     network {{ iface.address.ip }} 0.0.0.0 area 0
     {%- endfor %}
     {%- if origin %}
@@ -38,6 +38,7 @@ interface GigabitEthernet0/{{ loop.index0 }}
     description {{ iface.description }}
     {%- endif %}
     {%- if iface.description == "unused" %}
+    no ip address
     shutdown
     {%- else %}
     ip address {{ iface.address.ip }} {{ iface.address.netmask }}

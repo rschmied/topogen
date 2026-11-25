@@ -48,6 +48,7 @@ def test_router_configs_include_unused_provisioned_interfaces(template):
     config = router.configuration[0]["content"]
     assert "description unused" in config
     assert "shutdown" in config
+    assert "network 0.0.0.0 0.0.0.0 area 0" not in config
 
 
 def test_frr_exports_minimum_interfaces_without_unused_config():
