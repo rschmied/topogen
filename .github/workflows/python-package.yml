@@ -11,7 +11,11 @@
 
 name: Python package
 
-on: [push]
+on:
+  pull_request:
+    branches: [main]
+  push:
+    tags: ["v*"]
 
 permissions:
   contents: read
@@ -19,7 +23,6 @@ permissions:
 jobs:
   build:
     name: "Build package"
-    if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -48,7 +51,7 @@ jobs:
       #     cat src/eve2cml/_version.py
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --dev --locked
 
       - name: Check code
         run: |
