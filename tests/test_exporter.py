@@ -102,6 +102,29 @@ def test_to_yaml_round_trip():
     assert data["links"] == []
 
 
+def test_to_yaml_uses_literal_blocks_for_multiline_configuration():
+    topo = ExportTopology(
+        lab=ExportLab(version="0.3.0", title="lab"),
+        nodes=[
+            ExportNode(
+                id="n1",
+                label="R1",
+                node_definition="frr",
+                x=0,
+                y=0,
+                configuration=[{"name": "node.cfg", "content": "line one\nline two"}],
+            )
+        ],
+    )
+    rendered = to_yaml(topo)
+    assert "content: |-\n" in rendered
+    assert "      line one\n      line two" in rendered
+    assert (
+        yaml.safe_load(rendered)["nodes"][0]["configuration"]
+        == topo.nodes[0].configuration
+    )
+
+
 def test_exported_shape_matches_expected_keys():
     topo = ExportTopology(
         lab=ExportLab(version="0.3.0", title="lab"),

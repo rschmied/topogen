@@ -1,7 +1,7 @@
 # TopoGen for CML/simple
 
 TopoGen generates CML/simple YAML topologies offline. It does not connect to a
-CML controller.
+CML controller (the previous/legacy version did).
 
 ## Features
 
@@ -14,11 +14,12 @@ CML controller.
 ## Installation
 
 ```shell
-uv sync --all-extras --dev --frozen
+uv sync --dev --frozen
 ```
 
-`nx` mode needs the NumPy and SciPy dependencies in the `all` extra. Run the
-CLI with `uv run topogen` if the environment is not active.
+NumPy and SciPy are installed as normal runtime dependencies because `nx` mode
+uses them for graph layout. Run the CLI with `uv run topogen` if the environment
+is not active.
 
 ## Usage
 

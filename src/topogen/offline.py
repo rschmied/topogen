@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from argparse import Namespace
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -36,6 +37,8 @@ from topogen.node_definitions import interface_labels
 
 ROUTER_TEMPLATES = {"frr", "iosv", "iol-xe"}
 DEFAULT_TEMPLATE = "iosv"
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _router_interfaces(template: str, count: int) -> list[ExportInterface]:
@@ -78,6 +81,7 @@ def _config_files(
 def _nx_graph(router_count: int, distance: int) -> nx.Graph:
     if router_count < 2:
         raise ValueError("at least two routers are required")
+    _LOGGER.info("Creating random-shell router graph")
     if router_count == 3:
         graph = nx.complete_graph(router_count)
     else:
@@ -90,9 +94,14 @@ def _nx_graph(router_count: int, distance: int) -> nx.Graph:
             else (remaining, remaining * 2, 0.999)
             for index in range(clusters + (1 if remaining else 0))
         ]
+        _LOGGER.debug("Random-shell constructor: %s", constructor)
         graph = nx.random_shell_graph(constructor)
         if not nx.is_connected(graph):
-            graph.add_edges_from(nx.k_edge_augmentation(graph, k=1))
+            augmentation = list(nx.k_edge_augmentation(graph, k=1))
+            _LOGGER.warning(
+                "Adding %s links to connect the router graph", len(augmentation)
+            )
+            graph.add_edges_from(augmentation)
     if router_count == 3:
         graph.nodes[0]["pos"] = Point(346, 0)
         graph.nodes[1]["pos"] = Point(-173, 299)
@@ -101,16 +110,29 @@ def _nx_graph(router_count: int, distance: int) -> nx.Graph:
         positions = nx.kamada_kawai_layout(graph, scale=sqrt(router_count) * distance)
         for node_id, pos in positions.items():
             graph.nodes[node_id]["pos"] = Point(int(pos[0]), int(pos[1]))
+    _LOGGER.info(
+        "Router graph has %s nodes and %s links",
+        graph.number_of_nodes(),
+        graph.number_of_edges(),
+    )
+    _LOGGER.debug("Router positions: %s", nx.get_node_attributes(graph, "pos"))
     return graph
 
 
 def _simple_graph(router_count: int, distance: int) -> nx.Graph:
     if router_count < 2:
         raise ValueError("at least two routers are required")
+    _LOGGER.info("Creating router chain")
     graph = nx.path_graph(router_count)
     coords = iter(CoordsGenerator(distance))
     for node_id in graph.nodes:
         graph.nodes[node_id]["pos"] = next(coords)
+    _LOGGER.info(
+        "Router graph has %s nodes and %s links",
+        graph.number_of_nodes(),
+        graph.number_of_edges(),
+    )
+    _LOGGER.debug("Router positions: %s", nx.get_node_attributes(graph, "pos"))
     return graph
 
 
@@ -133,6 +155,11 @@ def _validate_address_capacity(graph: nx.Graph, cfg: Config) -> None:
             f"loopbacks provides {available_loopbacks} addresses; "
             f"{graph.number_of_nodes()} are required"
         )
+    _LOGGER.info(
+        "Validated address pools for %s routers and %s /30 networks",
+        graph.number_of_nodes(),
+        required_p2p_networks,
+    )
 
 
 def _topology(
@@ -172,6 +199,16 @@ def _topology(
         dns_zone.extend(
             [DNShost(dns_name, left_addr.ip), DNShost(dns_name, right_addr.ip)]
         )
+        _LOGGER.debug(
+            "Allocated %s: R%s %s %s <-> R%s %s %s",
+            network,
+            left + 1,
+            left_label,
+            left_addr,
+            right + 1,
+            right_label,
+            right_addr,
+        )
         links.append(
             ExportLink(
                 id=f"l{link_id}",
@@ -184,6 +221,7 @@ def _topology(
         )
 
     core = max(graph.degree, key=lambda item: item[1])[0]
+    _LOGGER.info("Selected R%s as DNS core router", core + 1)
     dns_network = next(p2p_networks)
     core_addr, dns_addr = (
         IPv4Interface(f"{host}/{dns_network.prefixlen}") for host in dns_network.hosts()
@@ -202,6 +240,7 @@ def _topology(
     environment = Environment(loader=PackageLoader("topogen", "templates"))
     config_template = environment.get_template(f"{template_name}.jinja2")
     routers: list[ExportNode] = []
+    _LOGGER.info("Rendering configuration for %s routers", router_count)
     for node_id in graph.nodes:
         node = TopogenNode(
             hostname=f"R{node_id + 1}",
@@ -230,8 +269,11 @@ def _topology(
         )
         assert node.loopback is not None
         dns_zone.append(DNShost(node.hostname.lower(), node.loopback.ip))
+        _LOGGER.debug("Rendered %s using %s", node.hostname, template_name)
 
     dns_zone.append(DNShost("dns-host-eth1", dns_addr.ip))
+    _LOGGER.info("Rendering DNS host configuration with %s DNS records", len(dns_zone))
+    _LOGGER.debug("DNS records: %s", dns_zone)
     dns_model = TopogenNode(
         hostname="dns-host",
         loopback=None,
@@ -330,10 +372,24 @@ def simple_plan(
 
 
 def export_plan(plan: ExportTopology, output: str | Path) -> Path:
-    return write_yaml(plan, output)
+    _LOGGER.info("Writing topology to %s", output)
+    target = write_yaml(plan, output)
+    _LOGGER.info(
+        "Wrote topology with %s nodes and %s links to %s",
+        len(plan.nodes),
+        len(plan.links),
+        target,
+    )
+    return target
 
 
 def main(args: Namespace) -> int:
+    _LOGGER.info(
+        "Generating %s topology with %s %s routers",
+        args.mode,
+        args.nodes,
+        args.template,
+    )
     cfg = getattr(args, "topogen_config", None)
     plan = (
         nx_plan(args.nodes, args.distance, args.labname, args.template, cfg)

@@ -109,4 +109,5 @@ def dnshostconfig(cfg: Config, node: TopogenNode, hosts: list[DNShost]) -> str:
     )
 
     template = Environment(loader=BaseLoader).from_string(basic_config)  # type: ignore
-    return template.render(node=node, config=cfg, hosts=hosts)
+    rendered = template.render(node=node, config=cfg, hosts=hosts)
+    return "\n".join(line.rstrip() for line in rendered.splitlines() if line.strip())
