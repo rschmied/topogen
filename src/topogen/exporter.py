@@ -28,6 +28,7 @@ class ExportNode:
     node_definition: str
     x: int
     y: int
+    boot_disk_size: int | None = None
     interfaces: list[ExportInterface] = field(default_factory=list)
     configuration: list[dict[str, Any]] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
@@ -81,6 +82,66 @@ class TopologyExportError(TopogenError):
     pass
 
 
+def validate_topology(topology: ExportTopology) -> None:
+    if not topology.lab.version:
+        raise TopologyExportError("lab.version is required")
+    if not topology.lab.title:
+        raise TopologyExportError("lab.title is required")
+
+    node_interfaces: dict[str, set[str]] = {}
+    node_ids: set[str] = set()
+    for node in topology.nodes:
+        if not node.id:
+            raise TopologyExportError("node id is required")
+        if not node.node_definition:
+            raise TopologyExportError(f"node {node.id} node_definition is required")
+        if node.id in node_ids:
+            raise TopologyExportError(f"duplicate node id: {node.id}")
+        node_ids.add(node.id)
+        interface_ids: set[str] = set()
+        interface_slots: set[int] = set()
+        for interface in node.interfaces:
+            if not interface.id:
+                raise TopologyExportError(f"node {node.id} interface id is required")
+            if not interface.label:
+                raise TopologyExportError(f"node {node.id} interface {interface.id} label is required")
+            if interface.slot < 0:
+                raise TopologyExportError(f"node {node.id} interface {interface.id} slot must be >= 0")
+            if interface.id in interface_ids:
+                raise TopologyExportError(f"node {node.id} duplicate interface id: {interface.id}")
+            if interface.slot in interface_slots:
+                raise TopologyExportError(f"node {node.id} duplicate interface slot: {interface.slot}")
+            interface_ids.add(interface.id)
+            interface_slots.add(interface.slot)
+        node_interfaces[node.id] = interface_ids
+
+    link_ids: set[str] = set()
+    used_interfaces: set[tuple[str, str]] = set()
+    for link in topology.links:
+        if not link.id:
+            raise TopologyExportError("link id is required")
+        if link.id in link_ids:
+            raise TopologyExportError(f"duplicate link id: {link.id}")
+        link_ids.add(link.id)
+        if link.n1 not in node_interfaces:
+            raise TopologyExportError(f"link {link.id} references missing node {link.n1}")
+        if link.n2 not in node_interfaces:
+            raise TopologyExportError(f"link {link.id} references missing node {link.n2}")
+        if link.n1 == link.n2:
+            raise TopologyExportError(f"link {link.id} self-links node {link.n1}")
+        for node_id, interface_id in ((link.n1, link.i1), (link.n2, link.i2)):
+            if interface_id not in node_interfaces[node_id]:
+                raise TopologyExportError(
+                    f"link {link.id} references missing interface {node_id}:{interface_id}"
+                )
+            endpoint = (node_id, interface_id)
+            if endpoint in used_interfaces:
+                raise TopologyExportError(
+                    f"link {link.id} reuses interface {node_id}:{interface_id}"
+                )
+            used_interfaces.add(endpoint)
+
+
 def from_plan(plan: TopologyPlan) -> ExportTopology:
     validate_plan(plan)
     nodes = [
@@ -118,16 +179,13 @@ def from_plan(plan: TopologyPlan) -> ExportTopology:
 
 
 def to_dict(topology: ExportTopology) -> dict[str, Any]:
-    if not topology.lab.version:
-        raise TopologyExportError("lab.version is required")
-    if not topology.lab.title:
-        raise TopologyExportError("lab.title is required")
+    validate_topology(topology)
     return {
         "annotations": topology.annotations,
         "smart_annotations": topology.smart_annotations,
         "nodes": [
             {
-                "boot_disk_size": node.cpu_limit,
+                "boot_disk_size": node.boot_disk_size,
                 "configuration": node.configuration,
                 "cpu_limit": node.cpu_limit,
                 "cpus": node.cpus,
