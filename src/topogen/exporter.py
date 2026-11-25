@@ -183,8 +183,22 @@ def to_dict(topology: ExportTopology) -> dict[str, Any]:
     }
 
 
+class _YamlDumper(yaml.SafeDumper):
+    pass
+
+
+def _represent_multiline_string(dumper: yaml.SafeDumper, value: str):
+    style = "|" if "\n" in value else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
+
+
+_YamlDumper.add_representer(str, _represent_multiline_string)
+
+
 def to_yaml(topology: ExportTopology) -> str:
-    return yaml.safe_dump(to_dict(topology), sort_keys=False, allow_unicode=True)
+    return yaml.dump(
+        to_dict(topology), Dumper=_YamlDumper, sort_keys=False, allow_unicode=True
+    )
 
 
 def write_yaml(topology: ExportTopology, path: str | Path) -> Path:

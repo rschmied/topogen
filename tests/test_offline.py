@@ -143,6 +143,27 @@ def test_nx_mode_rejects_unknown_template():
         nx_plan(3, 100, "lab", "unknown")
 
 
+def test_offline_logs_generation_progress(caplog, tmp_path):
+    caplog.set_level("INFO", logger="topogen.offline")
+    output = tmp_path / "lab.yaml"
+    args = type(
+        "Args",
+        (),
+        {
+            "nodes": 3,
+            "distance": 100,
+            "labname": "lab",
+            "template": "frr",
+            "mode": "nx",
+            "output": str(output),
+        },
+    )()
+    assert main(args) == 0
+    assert "Generating nx topology with 3 frr routers" in caplog.messages
+    assert "Selected R1 as DNS core router" in caplog.messages
+    assert f"Wrote topology with 5 nodes and 5 links to {output}" in caplog.messages
+
+
 def test_main_uses_mode(monkeypatch, tmp_path):
     out = tmp_path / "lab.yaml"
     captured = {}
