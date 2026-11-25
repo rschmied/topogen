@@ -26,8 +26,12 @@ def test_coords_generator_reuse_points_are_distinct():
 
 
 def test_topogen_dataclasses():
-    iface = TopogenInterface(address=IPv4Interface("10.0.0.1/32"), description="x", slot=1)
-    node = TopogenNode(hostname="r1", loopback=IPv4Interface("10.0.0.1/32"), interfaces=[iface])
+    iface = TopogenInterface(
+        address=IPv4Interface("10.0.0.1/32"), description="x", slot=1
+    )
+    node = TopogenNode(
+        hostname="r1", loopback=IPv4Interface("10.0.0.1/32"), interfaces=[iface]
+    )
     host = DNShost(name="r1", ipv4=IPv4Address("10.0.0.1"))
     assert node.hostname == "r1"
     assert host.name == "r1"

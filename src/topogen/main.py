@@ -59,19 +59,6 @@ def create_argparser():
     )
 
     parser.add_argument(
-        "--ca",
-        dest="cafile",
-        help="Use the CA certificate from this file (PEM format), defaults to %(default)s",
-        default="ca.pem",
-    )
-    parser.add_argument(
-        "-i",
-        "--insecure",
-        action="store_true",
-        help="If no CA provided, do not verify TLS (insecure!)",
-        default=False,
-    )
-    parser.add_argument(
         "-d",
         "--distance",
         type=int,
@@ -162,9 +149,6 @@ def main():
         cfg.save(args.configfile)
         return 0
 
-    if args.insecure:
-        args.cafile = None
-
     if args.listtemplates:
         print("Available templates: ", ", ".join(get_templates()))
         return 0
@@ -175,6 +159,7 @@ def main():
     if args.template not in {"iosv", "iol-xe", "frr"}:
         parser.error(f"unsupported template: {args.template}")
 
+    args.topogen_config = cfg
     return offline_main(args)
 
 

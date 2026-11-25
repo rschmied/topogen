@@ -13,10 +13,19 @@ def test_get_templates_lists_packaged_templates():
 
 
 def test_get_templates_suffix_strip(monkeypatch):
-    class FakePkg:
+    class FakeResources:
         @staticmethod
-        def contents(_):
-            return ["a.jinja2", "b.txt", "c.jinja2"]
+        def files(_):
+            class FakePackage:
+                @staticmethod
+                def iterdir():
+                    return [
+                        type("Resource", (), {"name": "a.jinja2"})(),
+                        type("Resource", (), {"name": "b.txt"})(),
+                        type("Resource", (), {"name": "c.jinja2"})(),
+                    ]
 
-    monkeypatch.setattr(pkg_resources, "contents", FakePkg.contents)
+            return FakePackage()
+
+    monkeypatch.setattr(pkg_resources, "files", FakeResources.files)
     assert get_templates() == ["a", "c"]

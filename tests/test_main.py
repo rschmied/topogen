@@ -34,16 +34,41 @@ def test_main_yaml_mode_writes_output(monkeypatch, tmp_path):
     cfg.write_text("")
     called = {}
     monkeypatch.setattr(mainmod, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls()))
-    monkeypatch.setattr(mainmod, "offline_main", lambda args: (called.setdefault("mode", args.mode), out.write_text(args.mode), 0)[2])
-    monkeypatch.setattr(mainmod.sys, "argv", ["topogen", "--config", str(cfg), "--output", str(out), "--mode", "simple", "2"])
+    monkeypatch.setattr(
+        mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls())
+    )
+    monkeypatch.setattr(
+        mainmod,
+        "offline_main",
+        lambda args: (
+            called.setdefault("mode", args.mode),
+            out.write_text(args.mode),
+            0,
+        )[2],
+    )
+    monkeypatch.setattr(
+        mainmod.sys,
+        "argv",
+        [
+            "topogen",
+            "--config",
+            str(cfg),
+            "--output",
+            str(out),
+            "--mode",
+            "simple",
+            "2",
+        ],
+    )
     assert mainmod.main() == 0
     assert called["mode"] == "simple"
 
 
 def test_main_list_templates(monkeypatch, capsys):
     monkeypatch.setattr(mainmod, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls()))
+    monkeypatch.setattr(
+        mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls())
+    )
     monkeypatch.setattr(mainmod, "get_templates", lambda: ["iosv", "frr"])
     monkeypatch.setattr(mainmod.sys, "argv", ["topogen", "--list-templates"])
     assert mainmod.main() == 0
@@ -53,7 +78,9 @@ def test_main_list_templates(monkeypatch, capsys):
 def test_main_write_config(monkeypatch, tmp_path):
     path = tmp_path / "config.toml"
     monkeypatch.setattr(mainmod, "setup_logging", lambda *_: None)
-    monkeypatch.setattr(mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls()))
+    monkeypatch.setattr(
+        mainmod.topogen.Config, "load", classmethod(lambda cls, _: cls())
+    )
     monkeypatch.setattr(mainmod.sys, "argv", ["topogen", "-w", "-c", str(path), "2"])
     assert mainmod.main() == 0
 
@@ -70,7 +97,8 @@ def test_create_argparser_mode_and_template_defaults():
     parser = mainmod.create_argparser()
     args = parser.parse_args(["2"])
     assert args.template == "iosv"
-    assert args.cafile == "ca.pem"
+    assert not hasattr(args, "cafile")
+    assert not hasattr(args, "insecure")
 
 
 def test_main_invalid_nodes(monkeypatch):

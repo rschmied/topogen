@@ -37,6 +37,14 @@ class ExportNode:
     data_volume: None = None
     image_definition: None = None
     parameters: dict[str, Any] = field(default_factory=dict)
+    priority: None = None
+    pyats: dict[str, None] = field(
+        default_factory=lambda: {
+            "username": None,
+            "password": None,
+            "enable_password": None,
+        }
+    )
     ram: None = None
 
 
@@ -57,6 +65,7 @@ class ExportLab:
     title: str
     description: str = ""
     notes: str = ""
+    node_staging: dict[str, bool] | None = None
 
 
 @dataclass(slots=True)
@@ -129,6 +138,8 @@ def to_dict(topology: ExportTopology) -> dict[str, Any]:
                 "label": node.label,
                 "node_definition": node.node_definition,
                 "parameters": node.parameters,
+                "priority": node.priority,
+                "pyats": node.pyats,
                 "ram": node.ram,
                 "tags": node.tags,
                 "x": node.x,
@@ -163,6 +174,11 @@ def to_dict(topology: ExportTopology) -> dict[str, Any]:
             "title": topology.lab.title,
             "description": topology.lab.description,
             "notes": topology.lab.notes,
+            **(
+                {"node_staging": topology.lab.node_staging}
+                if topology.lab.node_staging
+                else {}
+            ),
         },
     }
 
