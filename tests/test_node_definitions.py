@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from topogen.node_definitions import interface_labels
+from topogen.node_definitions import interface_labels, router_definition
 
 
 @pytest.mark.parametrize(
@@ -20,6 +20,12 @@ from topogen.node_definitions import interface_labels
 )
 def test_interface_labels(node_definition, count, expected):
     assert interface_labels(node_definition, count) == expected
+
+
+def test_router_definitions_declare_template_and_provisioner():
+    assert router_definition("frr").provisioner == "frr"
+    assert router_definition("iosv").template == "iosv.jinja2"
+    assert router_definition("iol-xe").provisioner == "ios"
 
 
 def test_interface_labels_rejects_unknown_or_over_capacity_definition():

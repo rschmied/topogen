@@ -32,6 +32,7 @@ def test_dnshostconfig_renders_expected_core_lines():
     assert "ip route add 10.0.0.0/8 via 172.16.0.9" in out
     assert "r1.lab.local" in out
     assert "r2.lab.local" in out
+    assert "nameserver 8.8.8.8" in out
     assert "\n\n" not in out
 
 

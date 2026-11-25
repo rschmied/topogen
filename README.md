@@ -50,6 +50,16 @@ Choose one with `--template`, for example `--template=iosv` or
 node definitions and rejects a topology that needs more interfaces than the
 selected definition supports.
 
+For a mixed router lab, repeat `--router-type NAME=PERCENT`; values must total
+100. For example, this creates 20 routers with a 10/20/70 type mix:
+
+```shell
+topogen 20 --mode nx --router-type iol-xe=10 --router-type frr=20 --router-type iosv=70
+```
+
+Use `--seed NUMBER` to make random-shell graph generation and mixed router-type
+assignment reproducible.
+
 FRR configuration uses `node.cfg`, `boot.sh`, and `protocols`. IOSv and IOL-XE
 configuration uses `ios_config.txt`.
 

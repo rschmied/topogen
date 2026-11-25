@@ -68,7 +68,7 @@ def dnshostconfig(cfg: Config, node: TopogenNode, hosts: list[DNShost]) -> str:
         echo -e "{{ host.ipv4 }}\t{{ host.name }}.{{ config.domainname }}" >>/etc/hosts
         {%- endfor %}
 
-        cp /etc/resolv.conf /etc/resolv.dnsmasq
+        echo "nameserver {{ config.nameserver }}" >/etc/resolv.dnsmasq
         cat <<EOF >/etc/resolv.conf
         nameserver 127.0.0.1
         search {{ config.domainname }}

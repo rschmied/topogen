@@ -92,6 +92,18 @@ def create_argparser():
         help='output YAML file for yaml mode, default "%(default)s"',
     )
     parser.add_argument(
+        "--router-type",
+        action="append",
+        default=[],
+        metavar="NAME=PERCENT",
+        help="Router type percentage; repeat to mix types, totals must be 100",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Seed for deterministic nx graph and router-type assignment",
+    )
+    parser.add_argument(
         "-m",
         "--mode",
         choices=("nx", "simple"),
@@ -156,7 +168,7 @@ def main():
     if args.nodes is None:
         parser.error("the following arguments are required: nodes")
 
-    if args.template not in {"iosv", "iol-xe", "frr"}:
+    if not args.router_type and args.template not in {"iosv", "iol-xe", "frr"}:
         parser.error(f"unsupported template: {args.template}")
 
     args.topogen_config = cfg

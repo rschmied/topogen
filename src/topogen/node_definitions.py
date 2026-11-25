@@ -1,4 +1,4 @@
-"""Static physical-interface maps copied from CML node definitions."""
+"""Static router definitions copied from CML node definitions."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from dataclasses import dataclass
 @dataclass(frozen=True, slots=True)
 class NodeDefinition:
     interfaces: tuple[str, ...]
+    template: str | None = None
+    provisioner: str | None = None
 
     @property
     def capacity(self) -> int:
@@ -19,12 +21,35 @@ def _ethernet_slots(count: int) -> tuple[str, ...]:
 
 
 NODE_DEFINITIONS = {
-    "iosv": NodeDefinition(tuple(f"GigabitEthernet0/{slot}" for slot in range(16))),
-    "iol-xe": NodeDefinition(_ethernet_slots(32)),
+    "iosv": NodeDefinition(
+        tuple(f"GigabitEthernet0/{slot}" for slot in range(16)),
+        template="iosv.jinja2",
+        provisioner="ios",
+    ),
+    "iol-xe": NodeDefinition(
+        _ethernet_slots(32), template="iol-xe.jinja2", provisioner="ios"
+    ),
     "alpine": NodeDefinition(tuple(f"eth{slot}" for slot in range(4))),
-    "frr": NodeDefinition(tuple(f"eth{slot}" for slot in range(32))),
+    "frr": NodeDefinition(
+        tuple(f"eth{slot}" for slot in range(32)),
+        template="frr.jinja2",
+        provisioner="frr",
+    ),
     "external_connector": NodeDefinition(("port",)),
 }
+
+ROUTER_DEFINITIONS = {
+    name: definition
+    for name, definition in NODE_DEFINITIONS.items()
+    if definition.template and definition.provisioner
+}
+
+
+def router_definition(name: str) -> NodeDefinition:
+    try:
+        return ROUTER_DEFINITIONS[name]
+    except KeyError as exc:
+        raise ValueError(f"unsupported router definition: {name}") from exc
 
 
 def interface_labels(node_definition: str, count: int) -> tuple[str, ...]:
