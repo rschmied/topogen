@@ -104,13 +104,21 @@ def validate_topology(topology: ExportTopology) -> None:
             if not interface.id:
                 raise TopologyExportError(f"node {node.id} interface id is required")
             if not interface.label:
-                raise TopologyExportError(f"node {node.id} interface {interface.id} label is required")
+                raise TopologyExportError(
+                    f"node {node.id} interface {interface.id} label is required"
+                )
             if interface.slot < 0:
-                raise TopologyExportError(f"node {node.id} interface {interface.id} slot must be >= 0")
+                raise TopologyExportError(
+                    f"node {node.id} interface {interface.id} slot must be >= 0"
+                )
             if interface.id in interface_ids:
-                raise TopologyExportError(f"node {node.id} duplicate interface id: {interface.id}")
+                raise TopologyExportError(
+                    f"node {node.id} duplicate interface id: {interface.id}"
+                )
             if interface.slot in interface_slots:
-                raise TopologyExportError(f"node {node.id} duplicate interface slot: {interface.slot}")
+                raise TopologyExportError(
+                    f"node {node.id} duplicate interface slot: {interface.slot}"
+                )
             interface_ids.add(interface.id)
             interface_slots.add(interface.slot)
         node_interfaces[node.id] = interface_ids
@@ -124,9 +132,13 @@ def validate_topology(topology: ExportTopology) -> None:
             raise TopologyExportError(f"duplicate link id: {link.id}")
         link_ids.add(link.id)
         if link.n1 not in node_interfaces:
-            raise TopologyExportError(f"link {link.id} references missing node {link.n1}")
+            raise TopologyExportError(
+                f"link {link.id} references missing node {link.n1}"
+            )
         if link.n2 not in node_interfaces:
-            raise TopologyExportError(f"link {link.id} references missing node {link.n2}")
+            raise TopologyExportError(
+                f"link {link.id} references missing node {link.n2}"
+            )
         if link.n1 == link.n2:
             raise TopologyExportError(f"link {link.id} self-links node {link.n1}")
         for node_id, interface_id in ((link.n1, link.i1), (link.n2, link.i2)):

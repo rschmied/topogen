@@ -23,7 +23,7 @@ ip subnet-zero
 ip domain lookup
 ip name-server {{ config.nameserver }}
 ip domain name {{ config.domainname }}
-crypto key generate rsa modulus 1024
+crypto key generate rsa modulus 2048
 ip ssh server algorithm authentication password
 username {{ config.username }} privilege 15 secret {{ config.password }}
 cdp run

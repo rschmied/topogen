@@ -10,7 +10,7 @@ ip subnet-zero
 ip domain lookup
 ip name-server {{ config.nameserver }}
 ip domain name {{ config.domainname }}
-crypto key generate rsa modulus 1024
+crypto key generate rsa modulus 2048
 ip ssh server algorithm authentication password
 username {{ config.username }} privilege 15 secret {{ config.password }}
 cdp run
@@ -37,9 +37,13 @@ interface GigabitEthernet0/{{ loop.index0 }}
     {%- if iface.description %}
     description {{ iface.description }}
     {%- endif %}
+    {%- if iface.description == "unused" %}
+    shutdown
+    {%- else %}
     ip address {{ iface.address.ip }} {{ iface.address.netmask }}
     cdp enable
     no shutdown
+    {%- endif %}
 !
 {%- endfor %}
 line vty 0 4

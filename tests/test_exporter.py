@@ -200,8 +200,14 @@ def test_exported_shape_matches_expected_keys():
         (
             ExportTopology(
                 lab=ExportLab(version="0.3.0", title="lab"),
-                nodes=[ExportNode(id="n1", label="R1", node_definition="frr", x=0, y=0)],
-                links=[ExportLink(id="l1", n1="n1", n2="n2", i1="i0", i2="i0", label="link")],
+                nodes=[
+                    ExportNode(id="n1", label="R1", node_definition="frr", x=0, y=0)
+                ],
+                links=[
+                    ExportLink(
+                        id="l1", n1="n1", n2="n2", i1="i0", i2="i0", label="link"
+                    )
+                ],
             ),
             "missing node",
         ),
@@ -215,8 +221,14 @@ def test_validate_topology_rejects_invalid_nodes_and_links(topo, match):
 @pytest.mark.parametrize(
     ("node", "match"),
     [
-        (ExportNode(id="", label="R1", node_definition="frr", x=0, y=0), "node id is required"),
-        (ExportNode(id="n1", label="R1", node_definition="", x=0, y=0), "node n1 node_definition is required"),
+        (
+            ExportNode(id="", label="R1", node_definition="frr", x=0, y=0),
+            "node id is required",
+        ),
+        (
+            ExportNode(id="n1", label="R1", node_definition="", x=0, y=0),
+            "node n1 node_definition is required",
+        ),
         (
             ExportNode(
                 id="n1",
@@ -275,7 +287,10 @@ def test_validate_topology_rejects_invalid_node_fields(node, match):
 @pytest.mark.parametrize(
     ("link", "match"),
     [
-        (ExportLink(id="", n1="n1", n2="n2", i1="i0", i2="i0", label="link"), "link id is required"),
+        (
+            ExportLink(id="", n1="n1", n2="n2", i1="i0", i2="i0", label="link"),
+            "link id is required",
+        ),
         (
             ExportLink(id="l1", n1="n1", n2="n1", i1="i0", i2="i0", label="link"),
             "self-links node n1",
@@ -284,19 +299,56 @@ def test_validate_topology_rejects_invalid_node_fields(node, match):
 )
 def test_validate_topology_rejects_invalid_link_fields(link, match):
     nodes = [
-        ExportNode(id="n1", label="R1", node_definition="frr", x=0, y=0, interfaces=[ExportInterface(id="i0", label="eth0", slot=0)]),
-        ExportNode(id="n2", label="R2", node_definition="frr", x=1, y=1, interfaces=[ExportInterface(id="i0", label="eth0", slot=0)]),
+        ExportNode(
+            id="n1",
+            label="R1",
+            node_definition="frr",
+            x=0,
+            y=0,
+            interfaces=[ExportInterface(id="i0", label="eth0", slot=0)],
+        ),
+        ExportNode(
+            id="n2",
+            label="R2",
+            node_definition="frr",
+            x=1,
+            y=1,
+            interfaces=[ExportInterface(id="i0", label="eth0", slot=0)],
+        ),
     ]
-    topo = ExportTopology(lab=ExportLab(version="0.3.0", title="lab"), nodes=nodes, links=[link])
+    topo = ExportTopology(
+        lab=ExportLab(version="0.3.0", title="lab"), nodes=nodes, links=[link]
+    )
     with pytest.raises(TopologyExportError, match=match):
         validate_topology(topo)
 
 
 def test_validate_topology_rejects_duplicate_link_id():
     nodes = [
-        ExportNode(id="n1", label="R1", node_definition="frr", x=0, y=0, interfaces=[ExportInterface(id="i0", label="eth0", slot=0)]),
-        ExportNode(id="n2", label="R2", node_definition="frr", x=1, y=1, interfaces=[ExportInterface(id="i0", label="eth0", slot=0)]),
-        ExportNode(id="n3", label="R3", node_definition="frr", x=2, y=2, interfaces=[ExportInterface(id="i0", label="eth0", slot=0)]),
+        ExportNode(
+            id="n1",
+            label="R1",
+            node_definition="frr",
+            x=0,
+            y=0,
+            interfaces=[ExportInterface(id="i0", label="eth0", slot=0)],
+        ),
+        ExportNode(
+            id="n2",
+            label="R2",
+            node_definition="frr",
+            x=1,
+            y=1,
+            interfaces=[ExportInterface(id="i0", label="eth0", slot=0)],
+        ),
+        ExportNode(
+            id="n3",
+            label="R3",
+            node_definition="frr",
+            x=2,
+            y=2,
+            interfaces=[ExportInterface(id="i0", label="eth0", slot=0)],
+        ),
     ]
     topo = ExportTopology(
         lab=ExportLab(version="0.3.0", title="lab"),

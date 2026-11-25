@@ -35,7 +35,11 @@ from topogen.models import (
     TopogenInterface,
     TopogenNode,
 )
-from topogen.node_definitions import interface_labels, router_definition
+from topogen.node_definitions import (
+    interface_labels,
+    provisioned_interface_count,
+    router_definition,
+)
 
 DEFAULT_TEMPLATE = "iosv"
 
@@ -43,7 +47,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _router_interfaces(template: str, count: int) -> list[ExportInterface]:
-    labels = interface_labels(template, max(count, 4))
+    labels = interface_labels(template, provisioned_interface_count(template, count))
     return [
         ExportInterface(id=f"i{slot}", label=label, slot=slot)
         for slot, label in enumerate(labels)
@@ -163,7 +167,9 @@ def _validate_address_capacity(graph: nx.Graph, cfg: Config) -> None:
     )
 
 
-def _router_mix(router_count: int, router_types: list[str], seed: int | None) -> dict[int, str]:
+def _router_mix(
+    router_count: int, router_types: list[str], seed: int | None
+) -> dict[int, str]:
     if not router_types:
         return {}
     percentages: dict[str, int] = {}
@@ -172,16 +178,24 @@ def _router_mix(router_count: int, router_types: list[str], seed: int | None) ->
             name, percent = value.split("=", 1)
             percent_value = int(percent)
         except ValueError as exc:
-            raise ValueError(f"invalid router type: {value}; expected NAME=PERCENT") from exc
+            raise ValueError(
+                f"invalid router type: {value}; expected NAME=PERCENT"
+            ) from exc
         if name in percentages or percent_value < 1:
             raise ValueError(f"invalid router type: {value}")
         router_definition(name)
         percentages[name] = percent_value
     if sum(percentages.values()) != 100:
         raise ValueError("router type percentages must total 100")
-    counts = {name: router_count * percent // 100 for name, percent in percentages.items()}
+    counts = {
+        name: router_count * percent // 100 for name, percent in percentages.items()
+    }
     remaining = router_count - sum(counts.values())
-    for name in sorted(percentages, key=lambda name: (router_count * percentages[name] % 100, name), reverse=True)[:remaining]:
+    for name in sorted(
+        percentages,
+        key=lambda name: (router_count * percentages[name] % 100, name),
+        reverse=True,
+    )[:remaining]:
         counts[name] += 1
     names = [name for name, count in counts.items() for _ in range(count)]
     random.Random(seed).shuffle(names)
@@ -189,8 +203,12 @@ def _router_mix(router_count: int, router_types: list[str], seed: int | None) ->
 
 
 def _topology(
-    graph: nx.Graph, labname: str, template_name: str, cfg: Config,
-    router_types: list[str] | None = None, seed: int | None = None,
+    graph: nx.Graph,
+    labname: str,
+    template_name: str,
+    cfg: Config,
+    router_types: list[str] | None = None,
+    seed: int | None = None,
 ) -> ExportTopology:
     """Build an offline router graph with DNS and an external connector."""
     router_definition(template_name)
@@ -279,10 +297,22 @@ def _topology(
         assert definition.template is not None
         assert definition.provisioner is not None
         config_template = environment.get_template(definition.template)
+        linked_interfaces = router_interfaces[node_id]
+        provisioned_count = provisioned_interface_count(
+            node_template, len(linked_interfaces)
+        )
+        config_interfaces = linked_interfaces
+        if definition.provisioner == "ios":
+            config_interfaces += [
+                TopogenInterface(
+                    IPv4Interface("0.0.0.0/0"), description="unused", slot=slot
+                )
+                for slot in range(len(linked_interfaces), provisioned_count)
+            ]
         node = TopogenNode(
             hostname=f"R{node_id + 1}",
             loopback=loopback_addresses[node_id],
-            interfaces=router_interfaces[node_id],
+            interfaces=config_interfaces,
         )
         config = config_template.render(
             config=router_cfg,
@@ -298,10 +328,10 @@ def _topology(
                 node_definition=node_template,
                 x=pos.x,
                 y=pos.y,
-                interfaces=_router_interfaces(
-                    node_template, len(router_interfaces[node_id])
+                interfaces=_router_interfaces(node_template, len(linked_interfaces)),
+                configuration=_config_files(
+                    definition.provisioner, config, nameserver, router_cfg
                 ),
-                configuration=_config_files(definition.provisioner, config, nameserver, router_cfg),
             )
         )
         assert node.loopback is not None
@@ -386,7 +416,12 @@ def nx_topology(
     seed: int | None = None,
 ) -> ExportTopology:
     return _topology(
-        _nx_graph(router_count, distance, seed), labname, template_name, cfg or Config(), router_types, seed
+        _nx_graph(router_count, distance, seed),
+        labname,
+        template_name,
+        cfg or Config(),
+        router_types,
+        seed,
     )
 
 
@@ -411,7 +446,14 @@ def simple_plan(
     router_types: list[str] | None = None,
     seed: int | None = None,
 ) -> ExportTopology:
-    return _topology(_simple_graph(nodes, distance), labname, template, cfg or Config(), router_types, seed)
+    return _topology(
+        _simple_graph(nodes, distance),
+        labname,
+        template,
+        cfg or Config(),
+        router_types,
+        seed,
+    )
 
 
 def export_plan(plan: ExportTopology, output: str | Path) -> Path:
@@ -435,9 +477,25 @@ def main(args: Namespace) -> int:
     )
     cfg = getattr(args, "topogen_config", None)
     plan = (
-        nx_plan(args.nodes, args.distance, args.labname, args.template, cfg, args.router_type, args.seed)
+        nx_plan(
+            args.nodes,
+            args.distance,
+            args.labname,
+            args.template,
+            cfg,
+            args.router_type,
+            args.seed,
+        )
         if args.mode == "nx"
-        else simple_plan(args.nodes, args.distance, args.labname, args.template, cfg, args.router_type, args.seed)
+        else simple_plan(
+            args.nodes,
+            args.distance,
+            args.labname,
+            args.template,
+            cfg,
+            args.router_type,
+            args.seed,
+        )
     )
     export_plan(plan, args.output)
     return 0

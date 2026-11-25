@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from topogen.node_definitions import interface_labels, router_definition
+from topogen.node_definitions import (
+    interface_labels,
+    provisioned_interface_count,
+    router_definition,
+)
 
 
 @pytest.mark.parametrize(
@@ -26,6 +30,21 @@ def test_router_definitions_declare_template_and_provisioner():
     assert router_definition("frr").provisioner == "frr"
     assert router_definition("iosv").template == "iosv.jinja2"
     assert router_definition("iol-xe").provisioner == "ios"
+
+
+@pytest.mark.parametrize(
+    ("node_definition", "linked_count", "expected"),
+    [
+        ("iosv", 1, 4),
+        ("iosv", 5, 5),
+        ("iol-xe", 1, 4),
+        ("iol-xe", 5, 8),
+        ("iol-xe", 9, 12),
+        ("frr", 1, 4),
+    ],
+)
+def test_provisioned_interface_count(node_definition, linked_count, expected):
+    assert provisioned_interface_count(node_definition, linked_count) == expected
 
 
 def test_interface_labels_rejects_unknown_or_over_capacity_definition():
