@@ -10,8 +10,8 @@ import sys
 
 import topogen
 from topogen.colorlog import CustomFormatter
-from topogen.models import TopogenError
-from topogen.render import Renderer, get_templates
+from topogen.offline import main as offline_main
+from topogen.render import get_templates
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,26 +57,7 @@ def create_argparser():
         default=os.environ.get("LOG_LEVEL", "WARN"),
         help="DEBUG, INFO, WARN, ERROR, CRITICAL, defaults to %(default)s",
     )
-    config_settings.add_argument(
-        "-p",
-        "--progress",
-        action="store_true",
-        help="show a progress bar",
-    )
 
-    parser.add_argument(
-        "--ca",
-        dest="cafile",
-        help="Use the CA certificate from this file (PEM format), defaults to %(default)s",
-        default="ca.pem",
-    )
-    parser.add_argument(
-        "-i",
-        "--insecure",
-        action="store_true",
-        help="If no CA provided, do not verify TLS (insecure!)",
-        default=False,
-    )
     parser.add_argument(
         "-d",
         "--distance",
@@ -103,6 +84,12 @@ def create_argparser():
         dest="listtemplates",
         action="store_true",
         help="List all available templates",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="topogen_lab.yaml",
+        help='output YAML file for yaml mode, default "%(default)s"',
     )
     parser.add_argument(
         "-m",
@@ -162,24 +149,18 @@ def main():
         cfg.save(args.configfile)
         return 0
 
-    if args.insecure:
-        args.cafile = None
-
     if args.listtemplates:
         print("Available templates: ", ", ".join(get_templates()))
         return 0
 
-    try:
-        renderer = Renderer(args, cfg)
-        # argparse ensures correct mode
-        if args.mode == "simple":
-            retval = renderer.render_node_sequence()
-        else:  # args.mode == "nx":
-            retval = renderer.render_node_network()
-    except TopogenError as exc:
-        _LOGGER.error(exc)
-        retval = 1
-    return retval
+    if args.nodes is None:
+        parser.error("the following arguments are required: nodes")
+
+    if args.template not in {"iosv", "iol-xe", "frr"}:
+        parser.error(f"unsupported template: {args.template}")
+
+    args.topogen_config = cfg
+    return offline_main(args)
 
 
 if __name__ == "__main__":

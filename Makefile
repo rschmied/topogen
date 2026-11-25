@@ -2,7 +2,7 @@ UV ?= uv
 
 .DEFAULT_GOAL := help
 
-.PHONY: help sync lint format format-check typecheck check build clean distclean
+.PHONY: help sync lint format format-check typecheck check test build clean distclean
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -23,13 +23,16 @@ format-check: ## Check formatting without changing files
 typecheck: ## Run Mypy static type checks
 	$(UV) run mypy --check-untyped-def src
 
-check: lint format-check typecheck ## Run all static checks
+test: ## Run unit tests
+	$(UV) run pytest --cov=src/topogen --cov-report=term-missing --cov-report=xml
+
+check: lint format-check typecheck test ## Run all static checks
 
 build: clean ## Build source and wheel distributions
 	$(UV) build
 
 clean: ## Remove generated build and cache files
-	rm -rf build dist .mypy_cache .ruff_cache .pytest_cache
+	rm -rf build dist .mypy_cache .ruff_cache .pytest_cache .coverage coverage.xml htmlcov
 	find src -type d -name __pycache__ -prune -exec rm -rf {} +
 	find src -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
 

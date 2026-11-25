@@ -1,0 +1,357 @@
+annotations: []
+smart_annotations: []
+nodes:
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          !
+          frr defaults traditional
+          hostname R1
+          log syslog informational
+          no ipv6 forwarding
+          service integrated-vtysh-config
+          !
+          int lo
+              ip address 10.0.0.1/32
+              ip ospf passive
+          !
+          ip route 0.0.0.0/0 172.16.0.14
+          !
+          router ospf
+              ospf router-id 10.0.0.1
+              network 10.0.0.1/32 area 0
+              network 172.16.0.1/30 area 0
+              network 172.16.0.5/30 area 0
+              network 172.16.0.13/30 area 0
+              default-information originate
+          !
+          interface eth0
+              description to R2 eth0
+              ip address 172.16.0.1/30
+              no shutdown
+          !
+          interface eth1
+              description to R3 eth0
+              ip address 172.16.0.5/30
+              no shutdown
+          !
+          interface eth2
+              description to dns-host eth1
+              ip address 172.16.0.13/30
+              no shutdown
+          !
+          !
+      - name: boot.sh
+        content: |-
+          #!/bin/bash
+          echo "nameserver 172.16.0.14" >/etc/resolv.conf
+          echo "search virl.lab" >>/etc/resolv.conf
+          exit 0
+      - name: protocols
+        content: |-
+          ospfd
+          bgpd
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n0
+    image_definition: null
+    label: R1
+    node_definition: frr
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 346
+    y: 0
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i1
+        label: eth1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i2
+        label: eth2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i3
+        label: eth3
+        mac_address: null
+        type: physical
+        slot: 3
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          !
+          frr defaults traditional
+          hostname R2
+          log syslog informational
+          no ipv6 forwarding
+          service integrated-vtysh-config
+          !
+          int lo
+              ip address 10.0.0.2/32
+              ip ospf passive
+          !
+          router ospf
+              ospf router-id 10.0.0.2
+              network 10.0.0.2/32 area 0
+              network 172.16.0.2/30 area 0
+              network 172.16.0.9/30 area 0
+          !
+          interface eth0
+              description to R1 eth0
+              ip address 172.16.0.2/30
+              no shutdown
+          !
+          interface eth1
+              description to R3 eth1
+              ip address 172.16.0.9/30
+              no shutdown
+          !
+          !
+      - name: boot.sh
+        content: |-
+          #!/bin/bash
+          echo "nameserver 172.16.0.14" >/etc/resolv.conf
+          echo "search virl.lab" >>/etc/resolv.conf
+          exit 0
+      - name: protocols
+        content: |-
+          ospfd
+          bgpd
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n1
+    image_definition: null
+    label: R2
+    node_definition: frr
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: -173
+    y: 299
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i1
+        label: eth1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i2
+        label: eth2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i3
+        label: eth3
+        mac_address: null
+        type: physical
+        slot: 3
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          !
+          frr defaults traditional
+          hostname R3
+          log syslog informational
+          no ipv6 forwarding
+          service integrated-vtysh-config
+          !
+          int lo
+              ip address 10.0.0.3/32
+              ip ospf passive
+          !
+          router ospf
+              ospf router-id 10.0.0.3
+              network 10.0.0.3/32 area 0
+              network 172.16.0.6/30 area 0
+              network 172.16.0.10/30 area 0
+          !
+          interface eth0
+              description to R1 eth1
+              ip address 172.16.0.6/30
+              no shutdown
+          !
+          interface eth1
+              description to R2 eth1
+              ip address 172.16.0.10/30
+              no shutdown
+          !
+          !
+      - name: boot.sh
+        content: |-
+          #!/bin/bash
+          echo "nameserver 172.16.0.14" >/etc/resolv.conf
+          echo "search virl.lab" >>/etc/resolv.conf
+          exit 0
+      - name: protocols
+        content: |-
+          ospfd
+          bgpd
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n2
+    image_definition: null
+    label: R3
+    node_definition: frr
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: -172
+    y: -299
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i1
+        label: eth1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i2
+        label: eth2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i3
+        label: eth3
+        mac_address: null
+        type: physical
+        slot: 3
+  - boot_disk_size: null
+    configuration: []
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n3
+    image_definition: null
+    label: ext-conn-0
+    node_definition: external_connector
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 0
+    y: 0
+    interfaces:
+      - id: i0
+        label: port
+        mac_address: null
+        type: physical
+        slot: 0
+  - boot_disk_size: null
+    configuration: []
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n4
+    image_definition: null
+    label: dns-host
+    node_definition: alpine
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 200
+    y: 0
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i1
+        label: eth1
+        mac_address: null
+        type: physical
+        slot: 1
+links:
+  - id: l0
+    n1: n0
+    n2: n1
+    i1: i0
+    i2: i0
+    conditioning: {}
+    label: R1-eth0<->R2-eth0
+  - id: l1
+    n1: n0
+    n2: n2
+    i1: i1
+    i2: i0
+    conditioning: {}
+    label: R1-eth1<->R3-eth0
+  - id: l2
+    n1: n1
+    n2: n2
+    i1: i1
+    i2: i1
+    conditioning: {}
+    label: R2-eth1<->R3-eth1
+  - id: l3
+    n1: n3
+    n2: n4
+    i1: i0
+    i2: i0
+    conditioning: {}
+    label: ext-conn-0-port<->dns-host-eth0
+  - id: l4
+    n1: n4
+    n2: n0
+    i1: i1
+    i2: i2
+    conditioning: {}
+    label: dns-host-eth1<->R1-eth2
+lab:
+  description: ''
+  notes: ''
+  title: topogen-reference
+  node_staging:
+    enabled: false
+    start_remaining: true
+    abort_on_failure: false
+  version: 0.3.2
